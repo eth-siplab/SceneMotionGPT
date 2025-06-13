@@ -72,8 +72,10 @@ class VQVae(nn.Module):
 
     def forward(self, features: Tensor):
         # Preprocess
+        # features in are (bs, T, 263)
         x_in = self.preprocess(features)
 
+        # x_in is (bs, 263, T)
         # Encode
         x_encoder = self.encoder(x_in)
 
@@ -91,9 +93,9 @@ class VQVae(nn.Module):
         features: Tensor,
     ) -> Union[Tensor, Distribution]:
 
-        N, T, _ = features.shape
-        x_in = self.preprocess(features)
-        x_encoder = self.encoder(x_in)
+        N, T, _ = features.shape # 1, 40 263
+        x_in = self.preprocess(features) # 1, 263, 40
+        x_encoder = self.encoder(x_in) # 1 512, 10
         x_encoder = self.postprocess(x_encoder)
         x_encoder = x_encoder.contiguous().view(-1,
                                                 x_encoder.shape[-1])  # (NT, C)

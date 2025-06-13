@@ -150,6 +150,9 @@ def load_motion(motion_uploaded, method):
     feats = torch.tensor(np.load(file), device=model.device)
     if len(feats.shape) == 2:
         feats = feats[None]
+        
+    if feats.shape[-2:] == (22, 3): # we are in joints representation and we need to convert it to features
+        feats = model.datamodule.joints2feats(feats)
     # feats = model.datamodule.normalize(feats)
 
     # Motion tokens

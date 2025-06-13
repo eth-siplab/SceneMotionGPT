@@ -27,7 +27,7 @@ def main():
     # Metric Logger
     pl_loggers = []
     for loggerName in cfg.LOGGER.TYPE:
-        if loggerName == 'tenosrboard' or cfg.LOGGER.WANDB.params.project:
+        if loggerName == 'tensorboard' or cfg.LOGGER.WANDB.params.project:
             pl_logger = instantiate_from_config(
                 eval(f'cfg.LOGGER.{loggerName.upper()}'))
             pl_loggers.append(pl_logger)

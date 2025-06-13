@@ -1,4 +1,5 @@
 import json
+import multiprocessing
 import os
 from pathlib import Path
 import time
@@ -14,7 +15,38 @@ from mGPT.data.build_data import build_data
 from mGPT.models.build_model import build_model
 from mGPT.utils.logger import create_logger
 import mGPT.render.matplot.plot_3d_global as plot_3d
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # <-- ADD THIS LINE
 
+def save_and_plot_item(args):
+    """
+    Worker function to process and save a single motion item.
+    This function will be run in a separate process.
+    """
+    # Unpack the arguments
+    id, xyz, xyz_in, text, output_text, output_dir = args
+
+    try:
+        # 1. Save the numpy arrays
+        np.save(os.path.join(output_dir, f'{id}_out.npy'), xyz)
+        np.save(os.path.join(output_dir, f'{id}_in.npy'), xyz_in)
+
+        # 2. Save the text files
+        with open(os.path.join(output_dir, f'{id}_in.txt'), 'w') as f:
+            f.write(text)
+        with open(os.path.join(output_dir, f'{id}_out.txt'), 'w') as f:
+            f.write(output_text)
+
+        # 3. Perform the slow plotting operations
+        # Note: The 'i' for the filename is now part of the unique 'id'
+        # To avoid file name collisions, we use the unique id in the output path.
+        print(f"Processing item {id}...")
+        plot_3d.draw_to_batch(xyz_in, [''], [os.path.join(output_dir, f'{id}_in.gif')])
+        # plot_3d.draw_to_batch(xyz, [''], [os.path.join(output_dir, f'{id}_out.gif')])
+        print(f"Finished processing item {id}")
+        return f"Successfully processed item {id}"
+    except Exception as e:
+        return f"Error processing item {id}: {e}"
 
 def motion_token_to_string(motion_token, lengths, codebook_size=512):
     motion_string = []
@@ -49,6 +81,12 @@ def load_example_input(txt_path, task, model):
             texts.append(line)
         else:
             feat_path = line.split('#')[1].replace('\n', '')
+            # adapt file path for my dataset path, remove everything before the humandl3d folder
+            feat_path = feat_path.split('humanml3d')[-1]
+            feat_path = os.path.join("datasets/humanml3d/",
+                                    feat_path[1:])
+
+
             if os.path.exists(feat_path):
                 feats = torch.tensor(np.load(feat_path), device=model.device)
                 feats = model.datamodule.normalize(feats)
@@ -81,14 +119,17 @@ def load_example_input(txt_path, task, model):
 
                 motion_split1 = '>'.join(
                     motion_splited[:split]
-                ) + f'><motion_id_{model.codebook_size+1}>'
-                motion_split2 = f'<motion_id_{model.codebook_size}>' + '>'.join(
+                ) + f'><motion_id_{model.hparams.codebook_size+1}>'
+                motion_split2 = f'<motion_id_{model.hparams.codebook_size}>' + '>'.join(
                     motion_splited[split:])
 
                 motion_masked = '>'.join(
                     motion_splited[:split2]
-                ) + '>' + f'<motion_id_{model.codebook_size+2}>' * (
+                ) + '>' + f'<motion_id_{model.hparams.codebook_size+2}>' * (
                     split3 - split2) + '>'.join(motion_splited[split3:])
+            else:
+                print(f"File {feat_path} does not exist, skipping.")
+                continue
 
             texts.append(
                 line.split('#')[0].replace(
@@ -201,6 +242,42 @@ def main():
             lengths = outputs["length"]
             output_texts = outputs["texts"]
 
+            tasks = []
+            for i in range(len(joints)):
+                xyz = joints[i][:lengths[i]]
+                xyz = xyz[None]
+                id = b * batch_size + i
+
+                # It's best to move tensor operations out of the parallel function
+                xyz_numpy = xyz.detach().cpu().numpy()
+                xyz_in_numpy = in_joints_batch[i][None].detach().cpu().numpy()
+                
+                # Each element in 'tasks' is a tuple of arguments for our worker function
+                task_args = (
+                    id,
+                    xyz_numpy,
+                    xyz_in_numpy,
+                    text_batch[i],
+                    output_texts[i],
+                    output_dir
+                )
+                tasks.append(task_args)
+
+            # multiprocessing.set_start_method('spawn', force=True)
+            logger.info(f"Dispatching {len(tasks)} saving/plotting jobs to parallel workers...")
+            with multiprocessing.Pool(processes=5) as pool:
+                # Use tqdm to show a progress bar for the parallel tasks
+                # pool.imap_unordered is often faster as it yields results as they complete
+                results = list(tqdm(pool.imap_unordered(save_and_plot_item, tasks), total=len(tasks)))
+            
+            print("Parallel jobs completed.")
+            # (Optional) You can check the results for any errors
+            for res in results:
+                if "Error" in res:
+                    logger.warning(res)
+
+            logger.info("All parallel jobs completed.")
+
             for i in range(len(joints)):
                 xyz = joints[i][:lengths[i]]
                 xyz = xyz[None]
@@ -223,8 +300,8 @@ def main():
                 with open(os.path.join(output_dir, f'{id}_out.txt'), 'w') as f:
                     f.write(output_texts[i])
 
-                # pose_vis = plot_3d.draw_to_batch(xyz_in, [''], [os.path.join(output_dir, f'{i}_in.gif')])
-                # pose_vis = plot_3d.draw_to_batch(xyz, [''], [os.path.join(output_dir, f'{i}_out.gif')])
+                pose_vis = plot_3d.draw_to_batch(xyz_in, [''], [os.path.join(output_dir, f'{i}_in.gif')])
+                pose_vis = plot_3d.draw_to_batch(xyz, [''], [os.path.join(output_dir, f'{i}_out.gif')])
 
     total_time = time.time() - total_time
     logger.info(
