@@ -1,0 +1,73 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Train Stage1",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "train",
+            "args": [
+                "--cfg", "configs/config_h3d_stage1.yaml",
+                "--nodebug"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "console": "integratedTerminal"
+        },
+                {
+            "name": "Train Stage2",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "train",
+            "args": [
+                "--cfg", "configs/config_h3d_stage2.yaml",
+                // "--nodebug"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "console": "integratedTerminal"
+        },
+                {
+            "name": "Train Stage3",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "train",
+            "args": [
+                "--cfg", "configs/config_h3d_stage3.yaml",
+                "--nodebug"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "1"
+            },
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Demo Motion to text",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "demo.py",
+            "args": [
+                "--cfg", "configs/config_h3d_stage3.yaml",
+                "--example",
+                "./demos/demo_test_m2t.txt"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "1"
+            },
+            "console": "integratedTerminal"
+        }
+    ]
+}

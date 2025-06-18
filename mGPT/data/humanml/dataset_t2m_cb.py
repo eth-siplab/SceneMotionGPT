@@ -9,6 +9,7 @@ from os.path import join as pjoin
 from rich.progress import track
 import json
 import spacy
+import logging
 
 class Text2MotionDatasetCB(data.Dataset):
     def __init__(
@@ -19,7 +20,7 @@ class Text2MotionDatasetCB(data.Dataset):
         std,
         max_motion_length=196,
         min_motion_length=20,
-        unit_length=4,
+        unit_length=4, # frames per token
         fps=20,
         tmpFile=True,
         tiny=False,
@@ -119,6 +120,10 @@ class Text2MotionDatasetCB(data.Dataset):
                                 new_name = '%s_%f_%f' % (name, f_tag,
                                                             to_tag)
 
+                                if new_name in data_dict:
+                                    logging.warning(
+                                        f"Duplicate name {new_name} in datadict found, overwriting."
+                                    )
                                 data_dict[new_name] = {
                                     'm_token_list': m_token_list_new,
                                     'text': [text_dict]

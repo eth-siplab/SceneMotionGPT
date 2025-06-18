@@ -20,6 +20,9 @@ def main():
 
     # Seed
     pl.seed_everything(cfg.SEED_VALUE)
+    
+    torch.set_float32_matmul_precision('high') # or 'medium'
+
 
     # Environment Variables
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -62,6 +65,7 @@ def main():
         deterministic=False,
     )
     logger.info("Trainer initialized")
+    logger.info(f"The save dir is {trainer.default_root_dir}")
 
     # Strict load pretrianed model
     if cfg.TRAIN.PRETRAINED:
@@ -76,6 +80,12 @@ def main():
     #     model = torch.compile(model, mode="reduce-overhead")
     # model = torch.compile(model)
 
+    # log the config to the logger (wandb)
+
+    if cfg.LOGGER.WANDB.params.project:
+        pl_logger.experiment.config.update(OmegaConf.to_container(cfg, resolve=True))
+        
+        
     # Lightning Fitting
     if cfg.TRAIN.RESUME:
         trainer.fit(model,

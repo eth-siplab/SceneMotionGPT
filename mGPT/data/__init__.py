@@ -60,7 +60,7 @@ class BASEDataModule(pl.LightningDataModule):
         dataloader_options["num_workers"] = self.cfg.TRAIN.NUM_WORKERS
         return DataLoader(
             self.train_dataset,
-            shuffle=False,
+            shuffle=False, # try to set true for better performance
             persistent_workers=True,
             **dataloader_options,
         )

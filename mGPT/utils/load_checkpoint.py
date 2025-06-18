@@ -9,14 +9,14 @@ def load_pretrained(cfg, model, logger=None, phase="train"):
     elif phase == "test":
         ckpt_path = cfg.TEST.CHECKPOINTS
         
-    state_dict = torch.load(ckpt_path, map_location="cpu")["state_dict"]
+    state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=False)["state_dict"]
     model.load_state_dict(state_dict, strict=True)
     return model
 
 
 def load_pretrained_vae(cfg, model, logger=None):
     state_dict = torch.load(cfg.TRAIN.PRETRAINED_VAE,
-                            map_location="cpu")['state_dict']
+                            map_location="cpu", weights_only=False)['state_dict']
     if logger is not None:
         logger.info(f"Loading pretrain vae from {cfg.TRAIN.PRETRAINED_VAE}")
         

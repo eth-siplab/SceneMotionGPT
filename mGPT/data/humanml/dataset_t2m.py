@@ -28,7 +28,7 @@ class Text2MotionDataset(data.Dataset):
     ):
 
         # restrian the length of motion and text
-        self.max_length = 20
+        self.min_length = 20
         self.max_motion_length = max_motion_length
         self.min_motion_length = min_motion_length
         self.unit_length = unit_length
@@ -165,13 +165,13 @@ class Text2MotionDataset(data.Dataset):
         self.data_dict = data_dict
         self.name_list = name_list
         self.nfeats = data_dict[name_list[0]]['motion'].shape[1]
-        self.reset_max_len(self.max_length)
+        self.reset_min_len(self.min_length)
 
-    def reset_max_len(self, length):
+    def reset_min_len(self, length):
         assert length <= self.max_motion_length
         self.pointer = np.searchsorted(self.length_arr, length)
         print("Pointer Pointing at %d" % self.pointer)
-        self.max_length = length
+        self.min_length = length
 
     def __len__(self):
         return len(self.name_list) - self.pointer

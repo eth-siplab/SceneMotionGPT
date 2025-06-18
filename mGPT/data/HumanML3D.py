@@ -2,11 +2,13 @@ import numpy as np
 import torch
 import os 
 from os.path import join as pjoin
+
 from .humanml.utils.word_vectorizer import WordVectorizer
 from .humanml.scripts.motion_process import (process_file, recover_from_ric)
 from . import BASEDataModule
 from .humanml import Text2MotionDatasetEval, Text2MotionDataset, Text2MotionDatasetCB, MotionDataset, MotionDatasetVQ, Text2MotionDatasetToken, Text2MotionDatasetM2T
 from .utils import humanml3d_collate
+import logging
 
 
 class HumanML3DDataModule(BASEDataModule):
@@ -51,6 +53,7 @@ class HumanML3DDataModule(BASEDataModule):
 
         # Dataset switch
         self.DatasetEval = Text2MotionDatasetEval
+        self.DatasetVal = None
 
         if cfg.TRAIN.STAGE == "vae":
             if cfg.model.params.motion_vae.target.split('.')[-1].lower() == "vqvae":
@@ -76,6 +79,11 @@ class HumanML3DDataModule(BASEDataModule):
         self._sample_set = self.get_sample_set(overrides={"split": "test", "tiny": True})
         self.nfeats = self._sample_set.nfeats
         cfg.DATASET.NFEATS = self.nfeats
+        
+        # print the lengths of the datasets
+        logging.info(f"Dataset {self.name} loaded with length {len(self.train_dataset)}")
+        logging.info(f"Dataset {self.name} eval loaded with length {len(self.val_dataset)}")
+        logging.info(f"Dataset {self.name} test loaded with length {len(self.test_dataset)}")
         
         
 

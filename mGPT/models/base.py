@@ -92,7 +92,7 @@ class BaseModel(LightningModule):
     def step_log_dict(self):
         return {
             "epoch": float(self.trainer.current_epoch),
-            "step": float(self.trainer.current_epoch)
+            "step": float(self.trainer.global_step)
         }
 
     def loss_log_dict(self, split: str):

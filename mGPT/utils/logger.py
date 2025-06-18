@@ -16,11 +16,14 @@ def create_logger(cfg, phase='train'):
     cfg_name = cfg.NAME
     model = cfg.model.target.split('.')[-2]
     cfg_name = os.path.basename(cfg_name).split('.')[0]
+    
+    time_str = time.strftime('%Y-%m-%d-%H-%M-%S')
+    cfg.TIME = str(time_str)
+    cfg_name = cfg_name + '_' + time_str
 
     final_output_dir = root_output_dir / model / cfg_name
     cfg.FOLDER_EXP = str(final_output_dir)
 
-    time_str = time.strftime('%Y-%m-%d-%H-%M-%S')
 
     new_dir(cfg, phase, time_str, final_output_dir)
 
@@ -54,12 +57,12 @@ def config_logger(final_output_dir, time_str, phase, head):
 @rank_zero_only
 def new_dir(cfg, phase, time_str, final_output_dir):
     # new experiment folder
-    cfg.TIME = str(time_str)
     if os.path.exists(final_output_dir) and not os.path.exists(cfg.TRAIN.RESUME) and not cfg.DEBUG and phase not in ['test', 'demo']:
         file_list = sorted(os.listdir(final_output_dir), reverse=True)
         for item in file_list:
             if item.endswith('.log'):
-                os.rename(str(final_output_dir), str(final_output_dir) + '_' + cfg.TIME)
+                archive_suffix = time.strftime('%Y%m%d%H%M%S%f') # More granular
+                os.rename(str(final_output_dir), str(final_output_dir) + "_archived_" + archive_suffix)
                 break
     final_output_dir.mkdir(parents=True, exist_ok=True)
     # write config yaml

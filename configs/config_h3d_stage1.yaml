@@ -9,7 +9,7 @@ TRAIN:
   #---------------------------------
   NUM_WORKERS: 16 # Number of workers
   BATCH_SIZE: 256 # Size of batches
-  END_EPOCH: 999999 # End epoch
+  END_EPOCH: 3000 # End epoch
   RESUME: '' # Resume training from this path
   PRETRAINED: '' # Preatrained model path
 
@@ -22,13 +22,13 @@ TRAIN:
 
 # Evaluating Configuration
 EVAL:
-  BATCH_SIZE: 32 # Evaluating Batch size
+  BATCH_SIZE: 256 # Evaluating Batch size
   SPLIT: test
 
 TEST:
   CHECKPOINTS: checkpoints/MotionGPT-base/motiongpt_s3_h3d.tar
   SPLIT: test
-  BATCH_SIZE: 32 # training Batch size
+  BATCH_SIZE: 256 # training Batch size
 
 DATASET:
   target: mGPT.data.HumanML3D.HumanML3DDataModule
@@ -54,7 +54,7 @@ model:
 
 LOGGER:
   TYPE: ['tensorboard', 'wandb']
-  VAL_EVERY_STEPS: 10
+  VAL_EVERY_STEPS: 15
   WANDB:
     params:
       project: motiongpt

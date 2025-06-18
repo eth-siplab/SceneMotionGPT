@@ -9,7 +9,7 @@ TRAIN:
   #---------------------------------
   NUM_WORKERS: 16 # Number of workers
   BATCH_SIZE: 16 # Size of batches
-  END_EPOCH: 999999 # End epoch
+  END_EPOCH: 100 # End epoch
   RESUME: '' # Resume training from this path
   PRETRAINED: '' # Preatrained model path
   PRETRAINED_VAE: checkpoints/MotionGPT-base/motiongpt_s3_h3d.tar # Vae model path

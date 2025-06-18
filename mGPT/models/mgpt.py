@@ -369,7 +369,7 @@ class MotionGPT(BaseModel):
         return rs_set
 
 
-    def allsplit_step(self, split: str, batch, batch_idx):
+    def allsplit_step(self, split: str, batch: dict, batch_idx):
         # Compute the losses
         loss = None
 
