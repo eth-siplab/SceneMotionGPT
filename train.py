@@ -2,6 +2,8 @@ import os
 import glob
 import torch
 import pytorch_lightning as pl
+from pytorch_lightning.utilities.rank_zero import rank_zero_only
+
 from omegaconf import OmegaConf
 from mGPT.callback import build_callbacks
 from mGPT.config import parse_args, instantiate_from_config
@@ -9,6 +11,8 @@ from mGPT.data.build_data import build_data
 from mGPT.models.build_model import build_model
 from mGPT.utils.logger import create_logger
 from mGPT.utils.load_checkpoint import load_pretrained, load_pretrained_vae
+
+
 
 def main():
     # Configs
@@ -81,10 +85,12 @@ def main():
     # model = torch.compile(model)
 
     # log the config to the logger (wandb)
+    @rank_zero_only
+    def update_wandb_config(cfg, pl_logger):
+        if cfg.LOGGER.WANDB.params.project:
+            pl_logger.experiment.config.update(OmegaConf.to_container(cfg, resolve=True))
 
-    if cfg.LOGGER.WANDB.params.project:
-        pl_logger.experiment.config.update(OmegaConf.to_container(cfg, resolve=True))
-        
+    update_wandb_config(cfg, pl_logger) if pl_loggers else None        
         
     # Lightning Fitting
     if cfg.TRAIN.RESUME:
