@@ -468,6 +468,15 @@ class MLM(nn.Module):
                          motion_strings,
                          texts,
                          stage='test'):
+        """
+        Fills a template based on caption, motion and task.
+        
+        Args:
+            tasks (list): List of task templates, e.g. t2m, m2t, predict, ...
+            lengths (list): List of lengths of the motions (+2 for some reason).
+            motion_strings (list): List of motion strings representing the motion.
+            texts (list): List of text captions corresponding to the motions.
+        """
         inputs = []
         outputs = []
         for i in range(len(lengths)):

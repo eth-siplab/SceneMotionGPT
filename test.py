@@ -133,6 +133,8 @@ def main():
 
     # Save metrics to file
     metric_file = output_dir.parent / f"metrics_{cfg.TIME}.json"
+    # ensure that folder exists
+    metric_file.parent.mkdir(parents=True, exist_ok=True)
     with open(metric_file, "w", encoding="utf-8") as f:
         json.dump(all_metrics_new, f, indent=4)
     logger.info(f"Testing done, the metrics are saved to {str(metric_file)}")

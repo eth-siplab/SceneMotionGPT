@@ -53,7 +53,6 @@ class HumanML3DDataModule(BASEDataModule):
 
         # Dataset switch
         self.DatasetEval = Text2MotionDatasetEval
-        self.DatasetVal = None
 
         if cfg.TRAIN.STAGE == "vae":
             if cfg.model.params.motion_vae.target.split('.')[-1].lower() == "vqvae":
