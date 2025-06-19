@@ -29,7 +29,7 @@ class Text2MotionDatasetEval(Text2MotionDataset):
 
 
     def __getitem__(self, item):
-        task = np.random.choice(self.tasks)
+        # task = np.random.choice(self.tasks)
         # Get text data
         idx = self.pointer + item
         data = self.data_dict[self.name_list[idx]]
@@ -90,4 +90,4 @@ class Text2MotionDatasetEval(Text2MotionDataset):
         motion = (motion - self.mean) / self.std
 
         return caption, motion, m_length, word_embeddings, pos_one_hots, sent_len, "_".join(
-            tokens), all_captions, task
+            tokens), all_captions
