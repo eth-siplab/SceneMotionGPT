@@ -7,6 +7,7 @@ import numpy as np
 from torch.utils import data
 from rich.progress import track
 from os.path import join as pjoin
+import json
 
 
 class Text2MotionDataset(data.Dataset):
@@ -24,8 +25,18 @@ class Text2MotionDataset(data.Dataset):
         tmpFile=True,
         tiny=False,
         debug=False,
+        stage='lm_pretrain', # added to get val loss as well
+        task_path=None, # added to get val loss as well
         **kwargs,
     ):
+        # if task_path:
+        #     instructions = task_path
+        # elif stage == 'lm_pretrain':
+        #     instructions = pjoin(data_root, 'template_pretrain.json')
+        # elif stage in ['lm_instruct', "lm_rl"]:
+        #     instructions = pjoin(data_root, 'template_instructions.json')
+        # else:
+        #     raise NotImplementedError(f"stage {stage} not implemented")
 
         # restrian the length of motion and text
         self.min_length = 20
@@ -166,6 +177,13 @@ class Text2MotionDataset(data.Dataset):
         self.name_list = name_list
         self.nfeats = data_dict[name_list[0]]['motion'].shape[1]
         self.reset_min_len(self.min_length)
+
+        # self.instructions = json.load(open(instructions, 'r'))
+        # self.tasks = []
+        # for task in self.instructions.keys():
+        #     for subtask in self.instructions[task].keys():
+        #         self.tasks.append(self.instructions[task][subtask])
+
 
     def reset_min_len(self, length):
         assert length <= self.max_motion_length
