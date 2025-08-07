@@ -68,17 +68,20 @@ class GPTLosses(BaseLosses):
                                        rs_set['m_ref'])
             # total += self._update_loss("recons_joints", rs_set['joints_rst'], rs_set['joints_ref'])
             nfeats = rs_set['m_rst'].shape[-1]
-            if nfeats in [263, 135 + 263]:
+            if nfeats in [263, 135 + 263, 419]:
                 if nfeats == 135 + 263:
                     vel_start = 135 + 4
+                    vel_end = (self.num_joints - 1) * 3 + vel_start
                 elif nfeats == 263:
                     vel_start = 4
+                    vel_end = (self.num_joints - 1)* 3 + vel_start
+                elif nfeats == 419:
+                    vel_start = 310
+                    vel_end = self.num_joints * 3 + vel_start
                 total += self._update_loss(
                     "recons_velocity",
-                    rs_set['m_rst'][..., vel_start:(self.num_joints - 1) * 3 +
-                                    vel_start],
-                    rs_set['m_ref'][..., vel_start:(self.num_joints - 1) * 3 +
-                                    vel_start])
+                    rs_set['m_rst'][..., vel_start:vel_end],
+                    rs_set['m_ref'][..., vel_start:vel_end])
             else:
                 if self._params['recons_velocity'] != 0.0:
                     raise NotImplementedError(

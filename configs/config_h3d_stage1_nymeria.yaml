@@ -1,4 +1,4 @@
-NAME: VQVAE_HumanML3D # Experiment names
+NAME: VQVAE_NYMERIA # Experiment names
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
 NUM_NODES: 1 # Number of GPU nodes for distributed training
 DEVICE: [0] # Index of gpus eg. [0] or [0,1,2,3]
@@ -31,10 +31,10 @@ TEST:
   BATCH_SIZE: 256 # training Batch size
 
 DATASET:
-  target: mGPT.data.HumanML3D.HumanML3DDataModule
+  target: mGPT.data.Nymeria.NymeriaDataModule
 
 METRIC:
-  TYPE: ['TM2TMetrics', 'MRMetrics']
+  TYPE: ['MRMetrics']
 
 LOSS:
   LAMBDA_FEATURE: 1.0

@@ -413,36 +413,37 @@ class MotionGPT(BaseModel):
                                 metric).update(rs_set["joints_rst"],
                                                rs_set["joints_ref"], lengths)
                     elif metric == "TM2TMetrics":
-                        if self.hparams.stage in [
-                                "lm_instruct", "lm_pretrain", "lm_rl"
-                        ]:
-                            word_embs = batch['word_embs']
-                            pos_ohot = batch['pos_ohot']
-                            text_lengths = batch['text_len']
-                            if self.trainer.datamodule.is_mm:
-                                word_embs = word_embs.repeat_interleave(
-                                    self.hparams.cfg.METRIC.MM_NUM_REPEATS,
-                                    dim=0)
-                                pos_ohot = pos_ohot.repeat_interleave(
-                                    self.hparams.cfg.METRIC.MM_NUM_REPEATS,
-                                    dim=0)
-                                text_lengths = text_lengths.repeat_interleave(
-                                    self.hparams.cfg.METRIC.MM_NUM_REPEATS,
-                                    dim=0)
-                        else:
-                            word_embs = None
-                            pos_ohot = None
-                            text_lengths = None
-
-                        getattr(self.metrics, metric).update(
-                            feats_ref=rs_set["m_ref"],
-                            feats_rst=rs_set["m_rst"],
-                            lengths_ref=lengths,
-                            lengths_rst=rs_set['length'],
-                            word_embs=word_embs,
-                            pos_ohot=pos_ohot,
-                            text_lengths=text_lengths,
-                        )
+                        pass
+                        # if self.hparams.stage in [
+                        #         "lm_instruct", "lm_pretrain", "lm_rl"
+                        # ]:
+                        #     word_embs = batch['word_embs']
+                        #     pos_ohot = batch['pos_ohot']
+                        #     text_lengths = batch['text_len']
+                        #     if self.trainer.datamodule.is_mm:
+                        #         word_embs = word_embs.repeat_interleave(
+                        #             self.hparams.cfg.METRIC.MM_NUM_REPEATS,
+                        #             dim=0)
+                        #         pos_ohot = pos_ohot.repeat_interleave(
+                        #             self.hparams.cfg.METRIC.MM_NUM_REPEATS,
+                        #             dim=0)
+                        #         text_lengths = text_lengths.repeat_interleave(
+                        #             self.hparams.cfg.METRIC.MM_NUM_REPEATS,
+                        #             dim=0)
+                        # else:
+                        #     word_embs = None
+                        #     pos_ohot = None
+                        #     text_lengths = None
+                        #
+                        # getattr(self.metrics, metric).update(
+                        #     feats_ref=rs_set["m_ref"],
+                        #     feats_rst=rs_set["m_rst"],
+                        #     lengths_ref=lengths,
+                        #     lengths_rst=rs_set['length'],
+                        #     word_embs=word_embs,
+                        #     pos_ohot=pos_ohot,
+                        #     text_lengths=text_lengths,
+                        # )
                     elif metric == "UncondMetrics":
                         getattr(self.metrics, metric).update(
                             recmotion_embeddings=rs_set["lat_rm"],
@@ -458,10 +459,10 @@ class MotionGPT(BaseModel):
                                 metric).update(rs_set["joints_rst"],
                                                rs_set["joints_ref"], lengths)
                     elif metric == "MMMetrics":
-                        # pass
-                        getattr(self.metrics,
-                                metric).update(rs_set["m_rst"],
-                                               rs_set['length'])
+                        pass
+                        # getattr(self.metrics,
+                        #         metric).update(rs_set["m_rst"],
+                        #                        rs_set['length'])
                     else:
                         raise TypeError(f"Not support this metric {metric}")
 

@@ -1,4 +1,6 @@
 import os
+import traceback
+
 import rich
 import random
 import pickle
@@ -101,15 +103,16 @@ class Text2MotionDataset(data.Dataset):
                     break
                 try:
                     motion = np.load(pjoin(motion_dir, name + ".npy"))
-                    if (len(motion)) < self.min_motion_length or (len(motion)
-                                                                  >= 200):
+                    if (len(motion)) < self.min_motion_length:
                         continue
 
                     # Read text
                     text_data = []
                     flag = False
+                    valid_annotation_found = False
                     with cs.open(pjoin(text_dir, name + '.txt')) as f:
                         lines = f.readlines()
+                        subseq_counter = 0
                         for line in lines:
                             text_dict = {}
                             line_split = line.strip().split('#')
@@ -125,6 +128,8 @@ class Text2MotionDataset(data.Dataset):
                             if f_tag == 0.0 and to_tag == 0.0:
                                 flag = True
                                 text_data.append(text_dict)
+                                valid_annotation_found = True
+
                             else:
                                 motion_new = motion[int(f_tag *
                                                         fps):int(to_tag * fps)]
@@ -132,15 +137,10 @@ class Text2MotionDataset(data.Dataset):
                                     ) < self.min_motion_length or (
                                         len(motion_new) >= 200):
                                     continue
-                                new_name = random.choice(
-                                    'ABCDEFGHIJKLMNOPQRSTUVW') + '_' + name
-                                while new_name in new_name_list:
-                                    new_name = random.choice(
-                                        'ABCDEFGHIJKLMNOPQRSTUVW') + '_' + name
-                                name_count = 1
+                                new_name = f"{name}_subseq_{subseq_counter}"
                                 while new_name in data_dict:
-                                    new_name += '_' + name_count
-                                    name_count += 1
+                                    subseq_counter += 1
+                                    new_name = f"{name}_subseq_{subseq_counter}"
                                 data_dict[new_name] = {
                                     'motion': motion_new,
                                     "length": len(motion_new),
@@ -148,6 +148,11 @@ class Text2MotionDataset(data.Dataset):
                                 }
                                 new_name_list.append(new_name)
                                 length_list.append(len(motion_new))
+                                subseq_counter += 1  # Increment for next subsequence
+                                valid_annotation_found = True
+
+                    if not valid_annotation_found:
+                        continue  # skip only if no valid annotation
 
                     if flag:
                         data_dict[name] = {
@@ -158,7 +163,8 @@ class Text2MotionDataset(data.Dataset):
                         new_name_list.append(name)
                         length_list.append(len(motion))
                 except:
-                    pass
+                    print(f"Error loading {name} in {split} split")
+                    traceback.print_exc()
 
             name_list, length_list = zip(
                 *sorted(zip(new_name_list, length_list), key=lambda x: x[1]))

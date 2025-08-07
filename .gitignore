@@ -200,3 +200,4 @@ checkpoints/
 deps/
 experiments/
 results/
+/datasets/Nymeria/
