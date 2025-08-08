@@ -11,7 +11,7 @@ TRAIN:
   BATCH_SIZE: 256 # Size of batches
   END_EPOCH: 3000 # End epoch
   RESUME: '' # Resume training from this path
-  PRETRAINED: '' # Preatrained model path
+  PRETRAINED: '/home/dominik/Documents/repos/MotionGPT/experiments/mgpt/VQVAE_NYMERIA_2025-08-01-21-02-15/checkpoints/last.ckpt' # Preatrained model path
 
   OPTIM:
     target: AdamW
@@ -26,10 +26,9 @@ EVAL:
   SPLIT: test
 
 TEST:
-  # CHECKPOINTS: checkpoints/MotionGPT-base/motiongpt_s3_h3d.tar
+  CHECKPOINTS: '/home/dominik/Documents/repos/MotionGPT/experiments/mgpt/VQVAE_NYMERIA_2025-08-01-21-02-15/checkpoints/last.ckpt'
   SPLIT: test
   BATCH_SIZE: 256 # training Batch size
-  REPLICATION_TIMES: 1
 
 DATASET:
   target: mGPT.data.Nymeria.NymeriaDataModule

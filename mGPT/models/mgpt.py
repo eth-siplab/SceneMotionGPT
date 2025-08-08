@@ -1,8 +1,13 @@
+import uuid
+
 import numpy as np
 import os
 import random
 import torch
 import time
+
+from lightning_fabric.utilities import rank_zero_only
+
 from mGPT.config import instantiate_from_config
 from os.path import join as pjoin
 from mGPT.losses.mgpt import GPTLosses
@@ -384,6 +389,7 @@ class MotionGPT(BaseModel):
             rs_set = self.train_rl_forward(batch)
             loss = None
 
+
         # Compute the metrics
         if split in ["val", "test"]:
             if self.hparams.stage == "vae":
@@ -482,6 +488,12 @@ class MotionGPT(BaseModel):
                             text_lengths=batch["text_len"],
                         )
 
+
+
+            # plot_3d.plot_3d_motion((joints_ref.cpu().numpy()[0], "test", "test"))
+
+        self.log_video(rs_set)
+
         # return forward output rather than loss during test
         if split in ["test"]:
             if self.hparams.task == "t2m":
@@ -493,3 +505,30 @@ class MotionGPT(BaseModel):
                 # return batch["length"]
 
         return loss
+
+    @rank_zero_only
+    def log_video(self, rs_set):
+        if "joints_ref" in rs_set and "joints_rst" in rs_set and np.random.random() <= 1/self.hparams.cfg["LOGGER"]["VIDEO_LOG_INTERVAL"]:
+            # log the motion prediction and ground truth
+            joints_ref = rs_set["joints_ref"]
+            joints_rst = rs_set["joints_rst"]
+            if self.datamodule.name == "nymeria":
+                # change the joints from z-up to y-up
+                joints_ref = joints_ref[..., [0, 2, 1]]
+                joints_rst = joints_rst[..., [0, 2, 1]]
+
+            output_path = f"/tmp/{uuid.uuid4()}.gif"
+            output_path = f"/tmp/reference.mp4"
+            plot_3d.draw_side_by_side([joints_ref.cpu().numpy()[0], joints_rst.detach().cpu().numpy()[0]] , ["Ground Truth", "Prediction"], output_path)
+            # wandb log gif
+
+            if self.logger is not None:
+                for logger in self.trainer.loggers:
+                    if type(logger).__name__ == 'WandbLogger':
+                        # Access the wandb run through experiment
+                        import wandb
+                        if logger.experiment is not None:
+                            # Log the image
+                            logger.experiment.log({
+                                "motion_comparison": wandb.Video(output_path, format="mp4")
+                            })

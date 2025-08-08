@@ -13,6 +13,8 @@ from mGPT.data.build_data import build_data
 from mGPT.models.build_model import build_model
 from mGPT.utils.logger import create_logger
 from mGPT.utils.load_checkpoint import load_pretrained, load_pretrained_vae
+from pytorch_lightning.utilities.rank_zero import rank_zero_only
+from mGPT.config import parse_args, instantiate_from_config
 
 
 def print_table(title, metrics, logger=None):
@@ -45,6 +47,14 @@ def main():
     # Logger
     logger = create_logger(cfg, phase="test")
     logger.info(OmegaConf.to_yaml(cfg))
+
+    # Metric Logger
+    pl_loggers = []
+    for loggerName in cfg.LOGGER.TYPE:
+        if loggerName == 'tensorboard' or cfg.LOGGER.WANDB.params.project:
+            pl_logger = instantiate_from_config(
+                eval(f'cfg.LOGGER.{loggerName.upper()}'))
+            pl_loggers.append(pl_logger)
 
     # Output dir
     model_name = cfg.model.target.split('.')[-2].lower()
@@ -84,17 +94,26 @@ def main():
         deterministic=False,
         detect_anomaly=False,
         enable_progress_bar=True,
-        logger=None,
+        logger=pl_loggers,
         callbacks=callbacks,
     )
+
+    @rank_zero_only
+    def update_wandb_config(cfg, pl_logger):
+        if cfg.LOGGER.WANDB.params.project:
+            pl_logger.experiment.config.update(OmegaConf.to_container(cfg, resolve=True))
+
+    update_wandb_config(cfg, pl_logger) if pl_loggers else None
 
     # Strict load vae model
     if cfg.TRAIN.PRETRAINED_VAE:
         load_pretrained_vae(cfg, model, logger)
+        print("VAE model loaded successfully")
 
     # loading state dict
     if cfg.TEST.CHECKPOINTS:
         load_pretrained(cfg, model, logger, phase="test")
+        print("Model loaded successfully")
     else:
         logger.warning("No checkpoints provided!!!")
 
@@ -137,6 +156,12 @@ def main():
     metric_file.parent.mkdir(parents=True, exist_ok=True)
     with open(metric_file, "w", encoding="utf-8") as f:
         json.dump(all_metrics_new, f, indent=4)
+
+    # log the metrics to the logger (wandb)
+    if pl_loggers:
+        for pl_logger in pl_loggers:
+            if cfg.LOGGER.WANDB.params.project:
+                pl_logger.log_metrics(all_metrics_new, step=trainer.global_step)
     logger.info(f"Testing done, the metrics are saved to {str(metric_file)}")
 
 

@@ -70,7 +70,7 @@ class Text2MotionDataset(data.Dataset):
             enumerator = enumerate(
                 track(
                     self.id_list,
-                    f"Loading HumanML3D {split}",
+                    f"Loading {data_root} {split}",
                 ))
             maxdata = 1e10
             subset = ''
@@ -89,7 +89,7 @@ class Text2MotionDataset(data.Dataset):
                 with rich.progress.open(
                         pjoin(data_root, f'tmp/{split}{subset}_data.pkl'),
                         'rb',
-                        description=f"Loading HumanML3D {split}") as file:
+                        description=f"Loading {data_root} {split}") as file:
                     data_dict = pickle.load(file)
             with open(pjoin(data_root, f'tmp/{split}{subset}_index.pkl'),
                       'rb') as file:

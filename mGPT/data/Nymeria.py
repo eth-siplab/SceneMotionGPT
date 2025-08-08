@@ -4,7 +4,7 @@ import os
 from os.path import join as pjoin
 
 from .humanml.utils.word_vectorizer import WordVectorizer
-from .humanml.scripts.motion_process import (process_file, recover_from_ric)
+from .nymeria.scripts.generate_motion_representation_nymeria import (process_file, recover_from_ric)
 from . import BASEDataModule
 from .humanml import Text2MotionDatasetEval, Text2MotionDataset, Text2MotionDatasetCB, MotionDataset, MotionDatasetVQ, Text2MotionDatasetToken, Text2MotionDatasetM2T
 from .utils import humanml3d_collate
@@ -21,7 +21,7 @@ class NymeriaDataModule(BASEDataModule):
         # Basic info of the dataset
         cfg.DATASET.JOINT_TYPE = 'nymeria'
         self.name = "nymeria"
-        self.njoints = 35
+        self.njoints = 34
         
         # Path to the dataset
         data_root = cfg.DATASET.NYMERIA.ROOT
@@ -91,7 +91,11 @@ class NymeriaDataModule(BASEDataModule):
         mean = torch.tensor(self.hparams.mean).to(features)
         std = torch.tensor(self.hparams.std).to(features)
         features = features * std + mean
-        return recover_from_ric(features, self.njoints)
+        joints = recover_from_ric(features, self.njoints)
+        #make joint at frame 0 start at 0,0,0 by centering the initial root frame
+        joints = joints - joints[:, 0:1, 0:1, :]
+        return joints
+
 
     def joints2feats(self, features):
         example_data = np.load(os.path.join(self.hparams.data_root, 'joints', '000021.npy'))

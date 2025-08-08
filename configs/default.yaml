@@ -135,6 +135,7 @@ DEMO:
 
 LOGGER:
   VAL_EVERY_STEPS: 10
+  VIDEO_LOG_INTERVAL: 1000 # Interval for logging video
   LOGGERS: ['tensorboard', 'wandb']
   TENSORBOARD:
     target: pytorch_lightning.loggers.TensorBoardLogger

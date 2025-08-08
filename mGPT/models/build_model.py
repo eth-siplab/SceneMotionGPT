@@ -1,5 +1,7 @@
 from omegaconf import OmegaConf
 from mGPT.config import instantiate_from_config
+import lovely_tensors as lt
+lt.monkey_patch()
 
 def build_model(cfg, datamodule):
     model_config = OmegaConf.to_container(cfg.model, resolve=True)

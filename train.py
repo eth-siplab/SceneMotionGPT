@@ -4,6 +4,7 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
 
+
 from omegaconf import OmegaConf
 from mGPT.callback import build_callbacks
 from mGPT.config import parse_args, instantiate_from_config
