@@ -36,11 +36,12 @@ class BaseModel(LightningModule):
         return self.forward(batch)
 
     def on_train_epoch_end(self):
-        # Log steps and losses
         dico = self.step_log_dict()
-        # Log losses
         dico.update(self.loss_log_dict('train'))
-        # Write to log only if not sanity check
+        # Log learning rate
+        optimizer = self.trainer.optimizers[0]
+        lr = optimizer.param_groups[0]['lr']
+        dico['learning_rate'] = lr
         if not self.trainer.sanity_checking:
             self.log_dict(dico, sync_dist=True, rank_zero_only=True)
 

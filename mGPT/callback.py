@@ -60,7 +60,7 @@ def getCheckpointCallback(cfg, logger=None, **kwargs):
         'every_n_epochs':
         cfg.LOGGER.VAL_EVERY_STEPS * 10,
         'save_top_k':
-        -1,
+        3,
         'save_last':
         False
     })

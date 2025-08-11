@@ -85,7 +85,7 @@ class MRMetrics(Metric):
         ref = joints_ref.detach().cpu()
 
         # align root joints index
-        if self.align_root and self.jointstype in ['mmm', 'humanml3d']:
+        if self.align_root and self.jointstype in ['mmm', 'humanml3d', "nymeria"]:
             align_inds = [0]
         else:
             align_inds = None

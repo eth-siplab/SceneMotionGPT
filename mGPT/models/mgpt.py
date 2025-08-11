@@ -492,7 +492,7 @@ class MotionGPT(BaseModel):
 
             # plot_3d.plot_3d_motion((joints_ref.cpu().numpy()[0], "test", "test"))
 
-        self.log_video(rs_set)
+        self.log_video(rs_set, split)
 
         # return forward output rather than loss during test
         if split in ["test"]:
@@ -507,7 +507,7 @@ class MotionGPT(BaseModel):
         return loss
 
     @rank_zero_only
-    def log_video(self, rs_set):
+    def log_video(self, rs_set, split):
         if "joints_ref" in rs_set and "joints_rst" in rs_set and np.random.random() <= 1/self.hparams.cfg["LOGGER"]["VIDEO_LOG_INTERVAL"]:
             # log the motion prediction and ground truth
             joints_ref = rs_set["joints_ref"]
@@ -530,5 +530,5 @@ class MotionGPT(BaseModel):
                         if logger.experiment is not None:
                             # Log the image
                             logger.experiment.log({
-                                "motion_comparison": wandb.Video(output_path, format="mp4")
+                                f"{split}/motion_comparison": wandb.Video(output_path, format="mp4")
                             })
