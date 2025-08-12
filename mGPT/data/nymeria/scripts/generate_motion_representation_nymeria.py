@@ -17,6 +17,7 @@ import torch
 from tqdm import tqdm, trange
 import os
 from pathlib import Path
+from typing import List
 
 # In[31]:
 
@@ -777,10 +778,7 @@ def recover_from_ric(data, joints_num):
 # In[63]:
 
 
-from typing import List
-import numpy as np
-import rerun as rr
-import time
+
 
 
 def rerun_log_joint_animation(joint_list: List[np.ndarray],
@@ -916,6 +914,9 @@ def save_all_joints(all_nymeria_data_paths, num_processes=4):
 For HumanML3D Dataset
 '''
 if __name__ == "__main__":
+
+    import rerun as rr
+    import time
     from nymeria.data_provider import NymeriaDataProvider
 
     all_nymeria_data_paths = [p for p in NYMERIA_DATA_PATH.iterdir() if p.is_dir()]
