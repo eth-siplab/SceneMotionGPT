@@ -68,7 +68,7 @@ class Text2MotionDatasetCB(data.Dataset):
             enumerator = enumerate(
                 track(
                     self.id_list,
-                    f"Loading HumanML3D {split}",
+                    f"Loading {motion_dir} {split}",
                 ))
             maxdata = 1e10
             subset = ''
@@ -88,6 +88,7 @@ class Text2MotionDatasetCB(data.Dataset):
                     text_data = []
                     flag = False
                     lines = f.readlines()
+                    subseq_counter = 0
 
                     for line in lines:
                         try:
@@ -117,9 +118,16 @@ class Text2MotionDatasetCB(data.Dataset):
 
                                 if len(m_token_list_new) == 0:
                                     continue
-                                new_name = '%s_%f_%f' % (name, f_tag,
-                                                            to_tag)
 
+
+                                if f_tag < 0 or to_tag < 0 or (to_tag<=f_tag):
+                                    raise ValueError(
+                                        f"Invalid tags for {name}: f_tag={f_tag}, to_tag={to_tag}"
+                                    )
+                                new_name = f"{name}_subseq_{subseq_counter}"
+                                while new_name in data_dict:
+                                    subseq_counter += 1
+                                    new_name = f"{name}_subseq_{subseq_counter}"
                                 if new_name in data_dict:
                                     logging.warning(
                                         f"Duplicate name {new_name} in datadict found, overwriting."
@@ -129,7 +137,12 @@ class Text2MotionDatasetCB(data.Dataset):
                                     'text': [text_dict]
                                 }
                                 new_name_list.append(new_name)
-                        except:
+                                subseq_counter += 1  # Increment for next subsequence
+
+                        except Exception as e:
+                            logging.error(
+                                f"Error processing line in {name}: {line.strip()}. Exception: {e}"
+                            )
                             pass
 
                 if flag:
@@ -138,7 +151,8 @@ class Text2MotionDatasetCB(data.Dataset):
                         'text': text_data
                     }
                     new_name_list.append(name)
-            except:
+            except Exception as e:
+                logging.error(f"Exception occured in {e} for {name}")
                 pass
 
         if tmpFile:

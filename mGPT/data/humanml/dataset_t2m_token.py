@@ -1,3 +1,4 @@
+import logging
 import random
 import numpy as np
 from torch.utils import data
@@ -49,7 +50,7 @@ class Text2MotionDatasetToken(data.Dataset):
         for name in self.id_list:
             try:
                 motion = np.load(pjoin(motion_dir, name + '.npy'))
-                if (len(motion)) <  self.min_motion_length or (len(motion) >= 200):
+                if (len(motion)) <  self.min_motion_length: # or (len(motion) >= 200)):
                     continue
 
                 data_dict[name] = {'motion': motion,
@@ -57,8 +58,9 @@ class Text2MotionDatasetToken(data.Dataset):
                                 'name': name}
                 new_name_list.append(name)
                 length_list.append(len(motion))
-            except:
+            except Exception as e:
                 # Some motion may not exist in KIT dataset
+                logging.error(f"Error loading motion for {name}: {e}")
                 pass
 
         self.length_arr = np.array(length_list)
