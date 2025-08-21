@@ -9,6 +9,28 @@ from .utils import *
 
 # motion reconstruction metric
 class MRMetrics(Metric):
+    """
+    A TorchMetrics class for evaluating motion reconstruction tasks.
+
+    This class assesses how accurately a model can reconstruct a ground truth motion
+    sequence. It is used in tasks where the model's input and output are both
+    motion sequences, such as in an autoencoder setup.
+
+    The metrics measure the error between the reconstructed motion (`joints_rst`) and
+    the original ground truth motion (`joints_ref`).
+
+    Key Metrics Computed:
+    - MPJPE (Mean Per Joint Position Error): Calculates the average Euclidean
+      distance between corresponding joints in the reconstructed and reference
+      motions. It measures the absolute positional accuracy.
+    - PAMPJPE (Procrustes Aligned MPJPE): Similar to MPJPE, but first aligns
+      the reconstructed motion to the reference motion using a rigid transformation.
+      This measures the error in the pose structure, independent of global
+      position and orientation.
+    - ACCEL (Acceleration Error): Computes the difference in acceleration between
+      the reconstructed and reference motions. This evaluates the smoothness and
+      dynamic correctness of the reconstruction.
+      """
 
     def __init__(self,
                  njoints,

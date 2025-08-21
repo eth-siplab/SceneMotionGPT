@@ -9,6 +9,32 @@ import os
 from mGPT.config import instantiate_from_config
 
 class MMMetrics(Metric):
+    """
+    A TorchMetrics class for evaluating the multimodality of a motion generation model.
+
+    This metric assesses the model's ability to generate diverse and varied motions
+    for the same input condition (e.g., the same text prompt). A high multimodality
+    score indicates that the model can produce a wide range of distinct motions,
+    rather than collapsing to a single or a few similar outputs.
+
+    How it works:
+    For a single input condition, the model is expected to generate `mm_num_times`
+    different motion samples. This metric calculates the average pairwise Euclidean
+    distance between the feature embeddings of these generated motions. A larger
+    average distance implies greater diversity and better multimodality.
+
+    The motion embeddings are extracted using a pre-trained motion encoder from a
+    Text-to-Motion model to ensure a consistent and meaningful feature space for
+    comparison.
+
+    Input (to the `update` method):
+    - `feats_rst` (Tensor): A batch of generated motion sequences. This batch should
+      contain multiple motion samples generated for the same input condition.
+    - `lengths_rst` (List[int]): The lengths of the generated motion sequences.
+
+    Output (from the `compute` method):
+    - A dictionary containing the 'MultiModality' score.
+    """
     full_state_update = True
 
     def __init__(self, cfg, dataname='humanml3d', mm_num_times=10, dist_sync_on_step=True, **kwargs):

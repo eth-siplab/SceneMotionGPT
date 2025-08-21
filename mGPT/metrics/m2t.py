@@ -9,6 +9,28 @@ import spacy
 from mGPT.config import instantiate_from_config
 
 class M2TMetrics(Metric):
+    """
+        A TorchMetrics class for evaluating Motion-to-Text (M2T) generation models.
+
+        This class computes a set of metrics to assess the quality of generated text
+        descriptions based on input human motion sequences. The primary task is text generation
+        conditioned on motion. It evaluates two key aspects:
+
+        1.  **Alignment**: How well the generated text description matches the input motion.
+            This is measured by `Matching Score` and `R-Precision`. These metrics compare
+            the embedding of the input motion against the embedding of the generated text.
+
+        2.  **Text Quality**: The fluency and accuracy of the generated text. This is
+            measured using standard Natural Language Generation (NLG) metrics like
+            `BLEU`, `ROUGE`, `CIDEr`, and `BERTScore`. These metrics compare the
+            model's predicted text against the ground truth text description.
+
+        The metrics are calculated by feeding input motions, predicted texts, and ground
+        truth texts into the `update` method, and then calling the `compute` method
+        to get the final dictionary of scores.
+
+        if metric is not smpl all the encoder based metrics are disabled as they require smpl representation.
+    """
 
     def __init__(self,
                  cfg,
@@ -21,6 +43,7 @@ class M2TMetrics(Metric):
                  diversity_times=300,
                  dist_sync_on_step=True,
                  unit_length=4,
+                 is_smpl=False,
                  **kwargs):
         super().__init__(dist_sync_on_step=dist_sync_on_step)
 
@@ -35,6 +58,7 @@ class M2TMetrics(Metric):
         self.R_size = R_size
         self.diversity_times = diversity_times
         self.unit_length = unit_length
+        self.is_smpl = is_smpl
 
         self.add_state("count", default=torch.tensor(0), dist_reduce_fx="sum")
         self.add_state("count_seq",
@@ -66,10 +90,11 @@ class M2TMetrics(Metric):
             )
             self.Matching_metrics.append(f"gt_R_precision_top_{str(k)}")
 
-        self.metrics.extend(self.Matching_metrics)
+        if is_smpl:
+            self.metrics.extend(self.Matching_metrics)
 
         # NLG
-        for k in range(1, top_k + 1):
+        for k in [1, 4]:
             self.add_state(
                 f"Bleu_{str(k)}",
                 default=torch.tensor(0.0),
@@ -115,9 +140,14 @@ class M2TMetrics(Metric):
         load T2M text encoder and motion encoder for evaluating
         """
         # init module
-        self.t2m_textencoder = instantiate_from_config(cfg.METRIC.TM2T.t2m_textencoder)
-        self.t2m_moveencoder = instantiate_from_config(cfg.METRIC.TM2T.t2m_moveencoder)
-        self.t2m_motionencoder = instantiate_from_config(cfg.METRIC.TM2T.t2m_motionencoder)
+        try:
+            self.t2m_textencoder = instantiate_from_config(cfg.METRIC.TM2T.t2m_textencoder)
+            self.t2m_moveencoder = instantiate_from_config(cfg.METRIC.TM2T.t2m_moveencoder)
+            self.t2m_motionencoder = instantiate_from_config(cfg.METRIC.TM2T.t2m_motionencoder)
+        except:
+            raise ValueError(
+                "m2t.py Please check the configuration for T2M text and motion encoders. Could not instantiate from config."
+            )
 
 
         # load pretrianed
@@ -227,62 +257,62 @@ class M2TMetrics(Metric):
 
         # Cat cached batches and shuffle
         shuffle_idx = torch.randperm(count_seq)
-        all_motions = torch.cat(self.gtmotion_embeddings,
-                                axis=0).cpu()[shuffle_idx, :]
-        all_gttexts = torch.cat(self.gttext_embeddings,
-                                axis=0).cpu()[shuffle_idx, :]
-        all_predtexts = torch.cat(self.predtext_embeddings,
-                                  axis=0).cpu()[shuffle_idx, :]
+        # Only shuffle embeddings if is_smpl
+        if self.is_smpl:
+            all_motions = torch.cat(self.gtmotion_embeddings,
+                                    axis=0).cpu()[shuffle_idx, :]
+            all_gttexts = torch.cat(self.gttext_embeddings,
+                                    axis=0).cpu()[shuffle_idx, :]
+            all_predtexts = torch.cat(self.predtext_embeddings,
+                                      axis=0).cpu()[shuffle_idx, :]
 
         print("Computing metrics...")
 
-        # Compute r-precision
-        assert count_seq >= self.R_size
-        top_k_mat = torch.zeros((self.top_k, ))
-        for i in range(count_seq // self.R_size):
-            # [bs=32, 1*256]
-            group_texts = all_predtexts[i * self.R_size:(i + 1) * self.R_size]
-            # [bs=32, 1*256]
-            group_motions = all_motions[i * self.R_size:(i + 1) * self.R_size]
-            # [bs=32, 32]
-            dist_mat = euclidean_distance_matrix(group_texts,
-                                                 group_motions).nan_to_num()
-            # print(dist_mat[:5])
-            self.Matching_score += dist_mat.trace()
-            argsmax = torch.argsort(dist_mat, dim=1)
-            top_k_mat += calculate_top_k(argsmax, top_k=self.top_k).sum(axis=0)
+        # Compute r-precision and matching scores only if is_smpl
+        if self.is_smpl:
+            assert count_seq >= self.R_size
+            top_k_mat = torch.zeros((self.top_k, ))
+            for i in range(count_seq // self.R_size):
+                group_texts = all_predtexts[i * self.R_size:(i + 1) * self.R_size]
+                group_motions = all_motions[i * self.R_size:(i + 1) * self.R_size]
+                dist_mat = euclidean_distance_matrix(group_texts,
+                                                     group_motions).nan_to_num()
+                self.Matching_score += dist_mat.trace()
+                argsmax = torch.argsort(dist_mat, dim=1)
+                top_k_mat += calculate_top_k(argsmax, top_k=self.top_k).sum(axis=0)
 
-        R_count = count_seq // self.R_size * self.R_size
-        metrics["Matching_score"] = self.Matching_score / R_count
-        for k in range(self.top_k):
-            metrics[f"R_precision_top_{str(k+1)}"] = top_k_mat[k] / R_count
+            R_count = count_seq // self.R_size * self.R_size
+            metrics["Matching_score"] = self.Matching_score / R_count
+            for k in range(self.top_k):
+                metrics[f"R_precision_top_{str(k+1)}"] = top_k_mat[k] / R_count
 
-        # Compute r-precision with gt
-        assert count_seq >= self.R_size
-        top_k_mat = torch.zeros((self.top_k, ))
-        for i in range(count_seq // self.R_size):
-            # [bs=32, 1*256]
-            group_texts = all_gttexts[i * self.R_size:(i + 1) * self.R_size]
-            # [bs=32, 1*256]
-            group_motions = all_motions[i * self.R_size:(i + 1) * self.R_size]
-            # [bs=32, 32]
-            dist_mat = euclidean_distance_matrix(group_texts,
-                                                 group_motions).nan_to_num()
-            # match score
-            self.gt_Matching_score += dist_mat.trace()
-            argsmax = torch.argsort(dist_mat, dim=1)
-            top_k_mat += calculate_top_k(argsmax, top_k=self.top_k).sum(axis=0)
-        metrics["gt_Matching_score"] = self.gt_Matching_score / R_count
-        for k in range(self.top_k):
-            metrics[f"gt_R_precision_top_{str(k+1)}"] = top_k_mat[k] / R_count
+            # Compute r-precision with gt
+            top_k_mat = torch.zeros((self.top_k, ))
+            for i in range(count_seq // self.R_size):
+                group_texts = all_gttexts[i * self.R_size:(i + 1) * self.R_size]
+                group_motions = all_motions[i * self.R_size:(i + 1) * self.R_size]
+                dist_mat = euclidean_distance_matrix(group_texts,
+                                                     group_motions).nan_to_num()
+                self.gt_Matching_score += dist_mat.trace()
+                argsmax = torch.argsort(dist_mat, dim=1)
+                top_k_mat += calculate_top_k(argsmax, top_k=self.top_k).sum(axis=0)
+            metrics["gt_Matching_score"] = self.gt_Matching_score / R_count
+            for k in range(self.top_k):
+                metrics[f"gt_R_precision_top_{str(k+1)}"] = top_k_mat[k] / R_count
+        # else:
+        #     # If not SMPL, set motion encoder metrics to None or zero
+        #     metrics["Matching_score"] = None
+        #     metrics["gt_Matching_score"] = None
+        #     for k in range(self.top_k):
+        #         metrics[f"R_precision_top_{str(k+1)}"] = None
+        #         metrics[f"gt_R_precision_top_{str(k+1)}"] = None
 
         # NLP metrics
         scores = self.nlg_evaluator(predictions=self.pred_texts,
                                     references=self.gt_texts)
-        for k in range(1, self.bleu_k + 1):
-            metrics[f"Bleu_{str(k)}"] = torch.tensor(scores[f'bleu_{str(k)}'],
+        for k in [1, 4]:
+            metrics[f"Bleu_{str(k)}"] = torch.tensor(scores[f'bleu_{str(k)}']["score"],
                                                      device=self.device)
-            
         metrics["ROUGE_L"] = torch.tensor(scores["rouge"]["rougeL"],
                                           device=self.device)
         metrics["CIDEr"] = torch.tensor(scores["cider"]['score'],device=self.device)
@@ -303,6 +333,9 @@ class M2TMetrics(Metric):
         self.gt_texts = []
         self.pred_texts = []
 
+        # remove all None metrics
+        metrics = {k: v for k, v in metrics.items() if v is not None}
+
         return {**metrics}
 
     @torch.no_grad()
@@ -318,29 +351,30 @@ class M2TMetrics(Metric):
         self.count += sum(lengths)
         self.count_seq += len(lengths)
 
-        # motion encoder
-        m_lens = torch.tensor(lengths, device=feats_ref.device)
-        align_idx = np.argsort(m_lens.data.tolist())[::-1].copy()
-        feats_ref = feats_ref[align_idx]
-        m_lens = m_lens[align_idx]
-        m_lens = torch.div(m_lens,
-                           self.cfg.DATASET.HUMANML3D.UNIT_LEN,
-                           rounding_mode="floor")
-        ref_mov = self.t2m_moveencoder(feats_ref[..., :-4]).detach()
-        m_lens = m_lens // self.unit_length
-        ref_emb = self.t2m_motionencoder(ref_mov, m_lens)
-        gtmotion_embeddings = torch.flatten(ref_emb, start_dim=1).detach()
-        self.gtmotion_embeddings.append(gtmotion_embeddings)
+        if self.is_smpl:
+            # motion encoder
+            m_lens = torch.tensor(lengths, device=feats_ref.device)
+            align_idx = np.argsort(m_lens.data.tolist())[::-1].copy()
+            feats_ref = feats_ref[align_idx]
+            m_lens = m_lens[align_idx]
+            m_lens = torch.div(m_lens,
+                               self.cfg.DATASET.HUMANML3D.UNIT_LEN,
+                               rounding_mode="floor")
+            ref_mov = self.t2m_moveencoder(feats_ref[..., :-4]).detach()
+            m_lens = m_lens // self.unit_length
+            ref_emb = self.t2m_motionencoder(ref_mov, m_lens)
+            gtmotion_embeddings = torch.flatten(ref_emb, start_dim=1).detach()
+            self.gtmotion_embeddings.append(gtmotion_embeddings)
 
-        # text encoder
-        gttext_emb = self.t2m_textencoder(word_embs, pos_ohot,
-                                          text_lengths)[align_idx]
-        gttext_embeddings = torch.flatten(gttext_emb, start_dim=1).detach()
-        predtext_emb = self._get_text_embeddings(pred_texts)[align_idx]
-        predtext_embeddings = torch.flatten(predtext_emb, start_dim=1).detach()
+            # text encoder
+            gttext_emb = self.t2m_textencoder(word_embs, pos_ohot,
+                                              text_lengths)[align_idx]
+            gttext_embeddings = torch.flatten(gttext_emb, start_dim=1).detach()
+            predtext_emb = self._get_text_embeddings(pred_texts)[align_idx]
+            predtext_embeddings = torch.flatten(predtext_emb, start_dim=1).detach()
 
-        self.gttext_embeddings.append(gttext_embeddings)
-        self.predtext_embeddings.append(predtext_embeddings)
-
+            self.gttext_embeddings.append(gttext_embeddings)
+            self.predtext_embeddings.append(predtext_embeddings)
+        # Always cache texts for NLG metrics
         self.pred_texts.extend(pred_texts)
         self.gt_texts.extend(gt_texts)

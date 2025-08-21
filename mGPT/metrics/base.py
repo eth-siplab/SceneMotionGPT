@@ -29,12 +29,16 @@ class BaseMetrics(nn.Module):
             )
 
         if data_name in ["humanml3d", "kit", "nymeria"]:
+            is_smpl = datamodule.njoints == 22
+
             self.M2TMetrics = M2TMetrics(
                 cfg=cfg,
                 dataname=data_name,
                 w_vectorizer=datamodule.hparams.w_vectorizer,
                 diversity_times=30 if debug else cfg.METRIC.DIVERSITY_TIMES,
-                dist_sync_on_step=cfg.METRIC.DIST_SYNC_ON_STEP)
+                dist_sync_on_step=cfg.METRIC.DIST_SYNC_ON_STEP,
+                is_smpl=is_smpl,
+            )
 
         self.MRMetrics = MRMetrics(
             njoints=njoints,

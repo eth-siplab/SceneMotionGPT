@@ -8,6 +8,26 @@ from .utils import *
 from mGPT.config import instantiate_from_config
 
 class TM2TMetrics(Metric):
+    """
+       A TorchMetrics class for evaluating Text-to-Motion (T2M) generation models.
+
+       This class computes a set of standard metrics to assess the quality of generated
+       human motions based on input text descriptions. The primary task is motion generation.
+       It evaluates three key aspects:
+       1.  **Alignment**: How well the generated motion matches the input text description.
+           This is measured by `Matching Score` and `R-Precision`, which compare the
+           embeddings of text prompts against the embeddings of generated motions.
+       2.  **Quality**: The realism and fidelity of the generated motions. This is
+           measured by `FID` (Fréchet Inception Distance), which compares the statistical
+           distribution of generated motion embeddings to that of real motions.
+       3.  **Diversity**: The variety within a set of generated motions. This is
+           measured by `Diversity`, which calculates the average distance between
+           different generated motion embeddings.
+
+       The metrics are calculated by feeding ground truth motions, generated motions,
+       and text descriptions into the `update` method, and then calling the `compute`
+       method to get the final dictionary of scores.
+       """
     def __init__(self,
                  cfg,
                  dataname='humanml3d',

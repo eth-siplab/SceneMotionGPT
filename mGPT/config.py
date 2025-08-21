@@ -206,7 +206,7 @@ def parse_args(phase="train"):
     # Debug mode
     if cfg.DEBUG:
         cfg.NAME = "debug--" + cfg.NAME
-        cfg.LOGGER.WANDB.params.offline = True
+        cfg.LOGGER.WANDB.params.offline = False
         cfg.LOGGER.VAL_EVERY_STEPS = 1
         
     # Resume config

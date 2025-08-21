@@ -38,7 +38,7 @@ DATASET:
   CODE_PATH: TOKENS
 
 METRIC:
-  TYPE: ['PredMetrics']
+  TYPE: ['PredMetrics', "M2TMetrics"]
 
 LOSS:
   LAMBDA_FEATURE: 1.0
@@ -52,7 +52,7 @@ model:
   target: mGPT.models.mgpt.MotionGPT
   params:
     condition: 'text'
-    task: 't2m'
+    task: 'm2t'
     lm: ${lm.default}
     motion_vae: ${vq.default}
 

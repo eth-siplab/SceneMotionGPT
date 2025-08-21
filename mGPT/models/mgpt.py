@@ -248,6 +248,7 @@ class MotionGPT(BaseModel):
 
     @torch.no_grad()
     def val_m2m_forward(self, batch, task="pred"):
+
         feats_ref = batch["motion"]
         lengths = batch["motion_len"]
 
@@ -413,43 +414,42 @@ class MotionGPT(BaseModel):
                     metrics_dicts.remove('PredMetrics')
 
                 for metric in metrics_dicts:
-                    lengths = batch['length']
+                    lengths = batch['motion_len']
                     if metric == "TemosMetric":
                         getattr(self.metrics,
                                 metric).update(rs_set["joints_rst"],
                                                rs_set["joints_ref"], lengths)
-                    elif metric == "TM2TMetrics":
-                        pass
-                        # if self.hparams.stage in [
-                        #         "lm_instruct", "lm_pretrain", "lm_rl"
-                        # ]:
-                        #     word_embs = batch['word_embs']
-                        #     pos_ohot = batch['pos_ohot']
-                        #     text_lengths = batch['text_len']
-                        #     if self.trainer.datamodule.is_mm:
-                        #         word_embs = word_embs.repeat_interleave(
-                        #             self.hparams.cfg.METRIC.MM_NUM_REPEATS,
-                        #             dim=0)
-                        #         pos_ohot = pos_ohot.repeat_interleave(
-                        #             self.hparams.cfg.METRIC.MM_NUM_REPEATS,
-                        #             dim=0)
-                        #         text_lengths = text_lengths.repeat_interleave(
-                        #             self.hparams.cfg.METRIC.MM_NUM_REPEATS,
-                        #             dim=0)
-                        # else:
-                        #     word_embs = None
-                        #     pos_ohot = None
-                        #     text_lengths = None
-                        #
-                        # getattr(self.metrics, metric).update(
-                        #     feats_ref=rs_set["m_ref"],
-                        #     feats_rst=rs_set["m_rst"],
-                        #     lengths_ref=lengths,
-                        #     lengths_rst=rs_set['length'],
-                        #     word_embs=word_embs,
-                        #     pos_ohot=pos_ohot,
-                        #     text_lengths=text_lengths,
-                        # )
+                    elif metric == "TM2TMetrics" and self.datamodule.njoints == 22:
+                        if self.hparams.stage in [
+                                "lm_instruct", "lm_pretrain", "lm_rl"
+                        ]:
+                            word_embs = batch['word_embs']
+                            pos_ohot = batch['pos_ohot']
+                            text_lengths = batch['text_len']
+                            if self.trainer.datamodule.is_mm:
+                                word_embs = word_embs.repeat_interleave(
+                                    self.hparams.cfg.METRIC.MM_NUM_REPEATS,
+                                    dim=0)
+                                pos_ohot = pos_ohot.repeat_interleave(
+                                    self.hparams.cfg.METRIC.MM_NUM_REPEATS,
+                                    dim=0)
+                                text_lengths = text_lengths.repeat_interleave(
+                                    self.hparams.cfg.METRIC.MM_NUM_REPEATS,
+                                    dim=0)
+                        else:
+                            word_embs = None
+                            pos_ohot = None
+                            text_lengths = None
+
+                        getattr(self.metrics, metric).update(
+                            feats_ref=rs_set["m_ref"],
+                            feats_rst=rs_set["m_rst"],
+                            lengths_ref=lengths,
+                            lengths_rst=rs_set['length'],
+                            word_embs=word_embs,
+                            pos_ohot=pos_ohot,
+                            text_lengths=text_lengths,
+                        )
                     elif metric == "UncondMetrics":
                         getattr(self.metrics, metric).update(
                             recmotion_embeddings=rs_set["lat_rm"],
@@ -492,7 +492,7 @@ class MotionGPT(BaseModel):
 
             # plot_3d.plot_3d_motion((joints_ref.cpu().numpy()[0], "test", "test"))
 
-        self.log_video(rs_set, split)
+        self.log_video(rs_set, batch, split)
 
         # return forward output rather than loss during test
         if split in ["test"]:
@@ -507,8 +507,12 @@ class MotionGPT(BaseModel):
         return loss
 
     @rank_zero_only
-    def log_video(self, rs_set, split):
-        if "joints_ref" in rs_set and "joints_rst" in rs_set and np.random.random() <= 1/self.hparams.cfg["LOGGER"]["VIDEO_LOG_INTERVAL"]:
+    def log_video(self, rs_set, batch, split):
+        log_coin = np.random.random() <= 1/self.hparams.cfg["LOGGER"]["VIDEO_LOG_INTERVAL"]
+
+        output_paths = []
+        # case one t2m task
+        if "joints_ref" in rs_set and "joints_rst" in rs_set and log_coin:
             # log the motion prediction and ground truth
             joints_ref = rs_set["joints_ref"]
             joints_rst = rs_set["joints_rst"]
@@ -517,18 +521,44 @@ class MotionGPT(BaseModel):
                 joints_ref = joints_ref[..., [0, 2, 1]]
                 joints_rst = joints_rst[..., [0, 2, 1]]
 
-            output_path = f"/tmp/{uuid.uuid4()}.gif"
-            output_path = f"/tmp/reference.mp4"
-            plot_3d.draw_side_by_side([joints_ref.cpu().numpy()[0], joints_rst.detach().cpu().numpy()[0]] , ["Ground Truth", "Prediction"], output_path)
-            # wandb log gif
+            output_path = f"/tmp/reference_t2m.mp4"
+            output_paths.append(output_path)
 
-            if self.logger is not None:
-                for logger in self.trainer.loggers:
-                    if type(logger).__name__ == 'WandbLogger':
-                        # Access the wandb run through experiment
-                        import wandb
-                        if logger.experiment is not None:
+            gt_text = batch["text"][0] if "text" in batch else "Ground Truth"
+            pred_text = rs_set["t_pred"][0] if "t_pred" in rs_set else "Prediction"
+            plot_3d.draw_side_by_side([joints_ref.cpu().numpy()[0], joints_rst.detach().cpu().numpy()[0]] ,
+                                      texts = [gt_text, pred_text],
+                                      title_list=["Ground Truth", "Prediction"],
+                                      outname=output_path)
+        # m2t task
+        if "m_ref" in rs_set and "t_ref" in rs_set and "t_pred" in rs_set and log_coin:
+            m_ref = rs_set["m_ref"]
+            joints_ref = self.feats2joints(m_ref)
+
+            if self.datamodule.name == "nymeria":
+                # change the joints from z-up to y-up
+                joints_ref = joints_ref[..., [0, 2, 1]]
+
+            t_ref = rs_set["t_ref"][0][0]
+            t_pred = rs_set["t_pred"][0]
+
+            output_path = f"/tmp/reference_m2t.mp4"
+            output_paths.append(output_path)
+            plot_3d.draw_single_motion_with_captions(joints_ref[0].detach().cpu().numpy(), gt_caption=t_ref, pred_caption=t_pred, outname=output_path)
+            plot_3d.draw_side_by_side([joints_ref.cpu().numpy()[0], joints_ref.detach().cpu().numpy()[0]] ,
+                                      texts = ["", ""],
+                                      title_list=["Ground Truth", "Prediction"],
+                                      outname="/tmp/test.mp4")
+
+        if self.logger is not None:
+            for logger in self.trainer.loggers:
+                if type(logger).__name__ == 'WandbLogger':
+                    # Access the wandb run through experiment
+                    import wandb
+                    if logger.experiment is not None:
+                        for output_path in output_paths:
+                            task = output_path.split("_")[1][:-4]  # Extract task from filename
                             # Log the image
                             logger.experiment.log({
-                                f"{split}/motion_comparison": wandb.Video(output_path, format="mp4")
+                                f"{split}/video_{task}": wandb.Video(output_path, format="mp4")
                             })

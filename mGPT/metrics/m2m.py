@@ -9,6 +9,35 @@ from .utils import *
 
 # motion reconstruction metric
 class PredMetrics(Metric):
+    """
+        A TorchMetrics class for evaluating motion prediction and in-betweening tasks.
+
+        This class assesses how accurately a model can predict future motion frames
+        (forecasting) or fill in missing frames within a sequence (in-betweening).
+        It computes the error between the model's predicted motion (`joints_rst`)
+        and the ground truth motion (`joints_ref`).
+
+        The specific portion of the motion sequence being evaluated depends on the `task`
+        parameter:
+        - 'pred': Evaluates the final part of the sequence for motion forecasting.
+        - 'inbetween': Evaluates a middle segment of the sequence for motion interpolation.
+
+        Key Metrics Computed:
+        - ADE (Average Displacement Error): Calculates the average Euclidean distance
+          between predicted and ground truth joints over the evaluated time steps.
+          It measures the average prediction error across the sequence.
+        - FDE (Final Displacement Error): Calculates the Euclidean distance between
+          the predicted and ground truth joints at the very last time step of the
+          evaluated segment. It measures the error at the end point of the prediction.
+
+        Input (to the `update` method):
+        - `joints_rst` (Tensor): The predicted motion sequences from the model.
+        - `joints_ref` (Tensor): The ground truth motion sequences.
+        - `lengths` (List[int]): The lengths of the motion sequences in the batch.
+
+        Output (from the `compute` method):
+        - A dictionary containing the computed values for 'ADE' and 'FDE'.
+    """
 
     def __init__(self,
                  cfg,
