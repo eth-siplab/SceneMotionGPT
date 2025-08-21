@@ -62,6 +62,11 @@ def humanml3d_collate(batch):
             "all_captions": [b["all_captions"] for b in notnone_batches],
         })
 
+    if "name" in notnone_batches[0]:
+        adapted_batch.update({
+            "name": [b["name"] for b in notnone_batches],
+        })
+
     # Evaluation fields
     if EvalFlag:
         adapted_batch.update({

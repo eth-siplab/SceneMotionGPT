@@ -1,3 +1,4 @@
+import logging
 import os
 import traceback
 
@@ -31,14 +32,6 @@ class Text2MotionDataset(data.Dataset):
         task_path=None, # added to get val loss as well
         **kwargs,
     ):
-        # if task_path:
-        #     instructions = task_path
-        # elif stage == 'lm_pretrain':
-        #     instructions = pjoin(data_root, 'template_pretrain.json')
-        # elif stage in ['lm_instruct', "lm_rl"]:
-        #     instructions = pjoin(data_root, 'template_instructions.json')
-        # else:
-        #     raise NotImplementedError(f"stage {stage} not implemented")
 
         # restrian the length of motion and text
         self.min_length = 20
@@ -114,42 +107,56 @@ class Text2MotionDataset(data.Dataset):
                         lines = f.readlines()
                         subseq_counter = 0
                         for line in lines:
-                            text_dict = {}
-                            line_split = line.strip().split('#')
-                            caption = line_split[0]
-                            t_tokens = line_split[1].split(' ')
-                            f_tag = float(line_split[2])
-                            to_tag = float(line_split[3])
-                            f_tag = 0.0 if np.isnan(f_tag) else f_tag
-                            to_tag = 0.0 if np.isnan(to_tag) else to_tag
+                            try:
+                                text_dict = {}
+                                line_split = line.strip().split('#')
+                                caption = line_split[0]
+                                t_tokens = line_split[1].split(' ')
+                                f_tag = float(line_split[2])
+                                to_tag = float(line_split[3])
+                                f_tag = 0.0 if np.isnan(f_tag) else f_tag
+                                to_tag = 0.0 if np.isnan(to_tag) else to_tag
 
-                            text_dict['caption'] = caption
-                            text_dict['tokens'] = t_tokens
-                            if f_tag == 0.0 and to_tag == 0.0:
-                                flag = True
-                                text_data.append(text_dict)
-                                valid_annotation_found = True
+                                text_dict['caption'] = caption
+                                text_dict['tokens'] = t_tokens
+                                if f_tag == 0.0 and to_tag == 0.0:
+                                    flag = True
+                                    text_data.append(text_dict)
+                                    valid_annotation_found = True
 
-                            else:
-                                motion_new = motion[int(f_tag *
-                                                        fps):int(to_tag * fps)]
-                                if (len(motion_new)
-                                    ) < self.min_motion_length or (
-                                        len(motion_new) >= 200):
-                                    continue
-                                new_name = f"{name}_subseq_{subseq_counter}"
-                                while new_name in data_dict:
-                                    subseq_counter += 1
+                                else:
+                                    motion_new = motion[int(f_tag *
+                                                            fps):int(to_tag * fps)]
+                                    if (len(motion_new)
+                                        ) < self.min_motion_length or (
+                                            len(motion_new) >= 200):
+                                        continue
+
+                                    if f_tag < 0 or to_tag < 0 or (to_tag <= f_tag):
+                                        raise ValueError(
+                                            f"Invalid tags for {name}: f_tag={f_tag}, to_tag={to_tag}"
+                                        )
                                     new_name = f"{name}_subseq_{subseq_counter}"
-                                data_dict[new_name] = {
-                                    'motion': motion_new,
-                                    "length": len(motion_new),
-                                    'text': [text_dict]
-                                }
-                                new_name_list.append(new_name)
-                                length_list.append(len(motion_new))
-                                subseq_counter += 1  # Increment for next subsequence
-                                valid_annotation_found = True
+                                    while new_name in data_dict:
+                                        subseq_counter += 1
+                                        new_name = f"{name}_subseq_{subseq_counter}"
+                                    if new_name in data_dict:
+                                        logging.warning(
+                                            f"Duplicate subsequence name {new_name} found, overwriting."
+                                        )
+
+                                    data_dict[new_name] = {
+                                        'motion': motion_new,
+                                        "length": len(motion_new),
+                                        'text': [text_dict]
+                                    }
+                                    new_name_list.append(new_name)
+                                    length_list.append(len(motion_new))
+                                    subseq_counter += 1  # Increment for next subsequence
+                                    valid_annotation_found = True
+                            except ValueError as e:
+                                logging.error(f"Error processing {name}: {e}")
+                                continue  # Skip this line if there's an error
 
                     if not valid_annotation_found:
                         continue  # skip only if no valid annotation

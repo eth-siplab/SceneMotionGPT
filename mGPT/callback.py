@@ -21,6 +21,7 @@ def getCheckpointCallback(cfg, logger=None, **kwargs):
     # Logging
     metric_monitor = {
         "loss_total": "total/train",
+        "loss_total_val": "total/val",
         "Train_jf": "recons/text2jfeats/train",
         "Val_jf": "recons/text2jfeats/val",
         "Train_rf": "recons/text2rfeats/train",

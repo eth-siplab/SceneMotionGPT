@@ -43,21 +43,23 @@ def main():
     if cfg.ACCELERATOR == "gpu":
         model = model.to('cuda')
 
-    for batch in tqdm(datasets.train_dataloader(),
-                      desc=f'motion tokenize'):
-        name = batch['text']
-        
-        pose = batch['motion']
-        pose = pose.cuda().float()
+    dataloaders = [datasets.train_dataloader, datasets.val_dataloader, datasets.test_dataloader]
+    for dataloader in dataloaders:
+        for batch in tqdm(dataloader(),
+                          desc=f'motion tokenize'):
+            name = batch['name']
 
-        if pose.shape[1] == 0:
-            continue
-        target, _ = model.vae.encode(pose)
-        target = target.to('cpu').numpy()
+            pose = batch['motion']
+            pose = pose.cuda().float()
 
-        target_path = os.path.join(output_dir, name[0] + '.npy')
-        Path(target_path).parent.mkdir(parents=True, exist_ok=True)
-        np.save(target_path, target)
+            if pose.shape[1] == 0:
+                continue
+            target, _ = model.vae.encode(pose)
+            target = target.to('cpu').numpy()
+
+            target_path = os.path.join(output_dir, name[0] + '.npy')
+            Path(target_path).parent.mkdir(parents=True, exist_ok=True)
+            np.save(target_path, target)
 
     print(
         f'Motion tokenization done, the motion tokens are saved to {output_dir}'

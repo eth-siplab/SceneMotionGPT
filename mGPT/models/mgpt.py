@@ -378,11 +378,11 @@ class MotionGPT(BaseModel):
         # Compute the losses
         loss = None
 
-        if self.hparams.stage == "vae" and split in ["train", "val"]:
+        if self.hparams.stage == "vae" and split in ["train", "val", "test"]:
             rs_set = self.train_vae_forward(batch)
             loss = self._losses['losses_' + split].update(rs_set)
         elif self.hparams.stage in ["lm_instruct", "lm_pretrain"
-                                    ] and split in ["train"]:
+                                    ] and split in ["train", "val", "test"]:
             rs_set = self.train_lm_forward(batch)
             loss = self._losses['losses_' + split].update(rs_set)
         elif self.hparams.stage == 'lm_rl' and split in ['train']:

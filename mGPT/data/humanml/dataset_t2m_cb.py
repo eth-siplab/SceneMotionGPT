@@ -82,6 +82,7 @@ class Text2MotionDatasetCB(data.Dataset):
                 break
             try:
                 # Load motion tokens
+                # np array 1xN
                 m_token_list = np.load(pjoin(motion_dir, f'{name}.npy'))
                 # Read text
                 with cs.open(pjoin(text_dir, name + '.txt')) as f:

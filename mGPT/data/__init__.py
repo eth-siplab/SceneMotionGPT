@@ -22,15 +22,16 @@ class BASEDataModule(pl.LightningDataModule):
     @property
     def train_dataset(self):
         if self._train_dataset is None:
-            self._train_dataset = self.Dataset(split=self.cfg.TRAIN.SPLIT,
-                                               **self.hparams)
+            params = self.hparams.copy()
+            params['split'] = self.cfg.TRAIN.SPLIT
+            self._train_dataset = self.Dataset(**params)
         return self._train_dataset
 
     @property
     def val_dataset(self):
         if self._val_dataset is None:
             params = self.hparams.copy()
-            params['code_path'] = None
+            # params['code_path'] = None
             params['split'] = self.cfg.EVAL.SPLIT
             self._val_dataset = self.DatasetEval(**params)
         return self._val_dataset
@@ -41,7 +42,7 @@ class BASEDataModule(pl.LightningDataModule):
             # self._test_dataset = self.DatasetEval(split=self.cfg.TEST.SPLIT,
             #                                       **self.hparams)
             params = self.hparams.copy()
-            params['code_path'] = None
+            # params['code_path'] = None
             params['split'] = self.cfg.TEST.SPLIT
             self._test_dataset = self.DatasetEval( **params)
         return self._test_dataset
@@ -60,7 +61,7 @@ class BASEDataModule(pl.LightningDataModule):
         dataloader_options["num_workers"] = self.cfg.TRAIN.NUM_WORKERS
         return DataLoader(
             self.train_dataset,
-            shuffle=False, # try to set true for better performance
+            shuffle=True, # try to set true for better performance
             persistent_workers=True,
             **dataloader_options,
         )

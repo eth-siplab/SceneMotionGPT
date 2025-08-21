@@ -12,7 +12,7 @@ TRAIN:
   END_EPOCH: 300 # End epoch
   RESUME: '' # Resume training from this path
   PRETRAINED: '/home/dominik/Documents/repos/MotionGPT/experiments/mgpt/Pretrain_Nymeria_2025-08-12-19-04-45/checkpoints/epoch=199-v1.ckpt' # Preatrained model path
-  PRETRAINED_VAE: experiments/mgpt/VQVAE_NYMERIA_2025-08-08-17-32-44/checkpoints/epoch=1649-v1.ckpt # Vae model path
+  PRETRAINED_VAE: experiments/mgpt/VQVAE_NYMERIA_2025-08-15-19-14-25/checkpoints/epoch=2849-v1.ckpt
 
   OPTIM:
     target: AdamW
@@ -27,7 +27,7 @@ EVAL:
   SPLIT: val # og code used to be test, seems odd, changed it to val
 
 TEST:
-  CHECKPOINTS: experiments/mgpt/VQVAE_NYMERIA_2025-08-08-17-32-44/checkpoints/epoch=1649-v1.ckpt
+  CHECKPOINTS: experiments/mgpt/VQVAE_NYMERIA_2025-08-15-19-14-25/checkpoints/epoch=2849-v1.ckpt
   SPLIT: test
   BATCH_SIZE: 1 # training Batch size
 
