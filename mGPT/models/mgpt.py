@@ -69,7 +69,7 @@ class MotionGPT(BaseModel):
 
     def forward(self, batch, task="t2m"):
         texts = batch["text"]
-        lengths_ref = batch["length"]
+        lengths_ref = batch["motion_len"]
 
         # Forward
         # texts = ['Generate motion: ' + text for text in texts]
@@ -126,9 +126,9 @@ class MotionGPT(BaseModel):
         return outputs
 
     def train_lm_forward(self, batch):
-        tokens_ref = batch["motion"]
+        tokens_ref = batch["motion_tokens"]
         texts = batch["text"]
-        lengths = batch["length"]
+        lengths = batch["motion_tokens_len"]
         tasks = batch["tasks"]
         all_captions = batch['all_captions']
         if self.hparams.condition == 'caption':
@@ -143,7 +143,7 @@ class MotionGPT(BaseModel):
     def val_t2m_forward(self, batch):
         feats_ref = batch["motion"]
         texts = batch["text"]
-        lengths = batch["length"]
+        lengths = batch["motion_len"]
         tasks = None
         if self.trainer.datamodule.is_mm:
             texts = texts * self.hparams.cfg.METRIC.MM_NUM_REPEATS
@@ -218,7 +218,7 @@ class MotionGPT(BaseModel):
 
         feats_ref = batch["motion"]
         texts = batch["text"]
-        lengths = batch["length"]
+        lengths = batch["motion_len"]
         all_captions = batch['all_captions']
 
         # Motion Encode
@@ -249,7 +249,7 @@ class MotionGPT(BaseModel):
     @torch.no_grad()
     def val_m2m_forward(self, batch, task="pred"):
         feats_ref = batch["motion"]
-        lengths = batch["length"]
+        lengths = batch["motion_len"]
 
         # Motion Encode
         motion_tokens = []
@@ -326,7 +326,7 @@ class MotionGPT(BaseModel):
     def val_vae_forward(self, batch, split="train"):
         # Detach batch
         feats_ref = batch["motion"]
-        lengths = batch["length"]
+        lengths = batch["motion_len"]
 
         # Repeat for multimodal evaluation
         if self.trainer.datamodule.is_mm:
@@ -501,7 +501,7 @@ class MotionGPT(BaseModel):
                     "joints_ref"]
                 # pass
             elif self.hparams.task == "m2t":
-                return rs_set["t_pred"], batch["length"]
+                return rs_set["t_pred"], batch["motion_len"]
                 # return batch["length"]
 
         return loss

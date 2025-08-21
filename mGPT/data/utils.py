@@ -27,46 +27,53 @@ def collate_tensors(batch):
         sub_tensor.add_(b)
     return canvas
 
+
 def humanml3d_collate(batch):
+    """
+    Collate function for dictionary-based dataset returns.
+    """
     notnone_batches = [b for b in batch if b is not None]
-    EvalFlag = False if notnone_batches[0][5] is None else True
 
-    # Sort by text length
+    # Check if this is an evaluation batch by looking for word_embs
+    EvalFlag = "word_embs" in notnone_batches[0]
+
+    # Sort by text length for evaluation batches
     if EvalFlag:
-        notnone_batches.sort(key=lambda x: x[5], reverse=True)
+        notnone_batches.sort(key=lambda x: x["text_len"], reverse=True)
 
-    # Motion only
-    adapted_batch = {
-        "motion":
-        collate_tensors([torch.tensor(b[1]).float() for b in notnone_batches]),
-        "length": [b[2] for b in notnone_batches],
-    }
-
-    # Text and motion
-    if notnone_batches[0][0] is not None:
+    adapted_batch = {}
+    # Motion data (always present)
+    if "motion" in notnone_batches[0]:
         adapted_batch.update({
-            "text": [b[0] for b in notnone_batches],
-            "all_captions": [b[7] for b in notnone_batches],
+            "motion": collate_tensors([torch.tensor(b["motion"]).float() for b in notnone_batches]),
+            "motion_len": [b["motion_len"] for b in notnone_batches],
         })
 
-    # Evaluation related
-    if EvalFlag:
+    if "motion_tokens" in notnone_batches[0]:
         adapted_batch.update({
-            "text": [b[0] for b in notnone_batches],
-            "word_embs":
-            collate_tensors(
-                [torch.tensor(b[3]).float() for b in notnone_batches]),
-            "pos_ohot":
-            collate_tensors(
-                [torch.tensor(b[4]).float() for b in notnone_batches]),
-            "text_len":
-            collate_tensors([torch.tensor(b[5]) for b in notnone_batches]),
-            "tokens": [b[6] for b in notnone_batches],
+            "motion_tokens": collate_tensors([torch.tensor(b["motion_tokens"]).float() for b in notnone_batches]),
+            "motion_tokens_len": [b["motion_tokens_len"] for b in notnone_batches],
         })
 
-    # Tasks
-    if len(notnone_batches[0]) == 9:
-        adapted_batch.update({"tasks": [b[8] for b in notnone_batches]})
+    # Text data (always present)
+    if "text" in notnone_batches[0]:
+        adapted_batch.update({
+            "text": [b["text"] for b in notnone_batches],
+            "all_captions": [b["all_captions"] for b in notnone_batches],
+        })
+
+    # Evaluation fields
+    if EvalFlag:
+        adapted_batch.update({
+            "word_embs": collate_tensors([torch.tensor(b["word_embs"]).float() for b in notnone_batches]),
+            "pos_ohot": collate_tensors([torch.tensor(b["pos_ohot"]).float() for b in notnone_batches]),
+            "text_len": collate_tensors([torch.tensor(b["text_len"]) for b in notnone_batches]),
+            "tokens": [b["tokens"] for b in notnone_batches],
+        })
+
+    # Tasks (if present)
+    if "tasks" in notnone_batches[0]:
+        adapted_batch.update({"tasks": [b["tasks"] for b in notnone_batches]})
 
     return adapted_batch
 

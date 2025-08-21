@@ -232,4 +232,9 @@ class Text2MotionDataset(data.Dataset):
         # Z Normalization
         motion = (motion - self.mean) / self.std
 
-        return caption, motion, m_length, None, None, None, None, all_captions
+        return {
+            "text": caption,
+            "motion": motion,
+            "motion_len": m_length,
+            "all_captions": all_captions
+        }

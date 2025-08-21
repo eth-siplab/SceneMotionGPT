@@ -85,4 +85,8 @@ class Text2MotionDatasetToken(data.Dataset):
         "Z Normalization"
         motion = (motion - self.mean) / self.std
 
-        return name, motion, m_length, True, True, True, True, True, True
+        return {
+            "name": name,
+            "motion": motion,
+            "motion_len": m_length
+        }

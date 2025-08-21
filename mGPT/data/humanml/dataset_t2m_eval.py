@@ -88,5 +88,13 @@ class Text2MotionDatasetEval(Text2MotionDataset):
         # Z Normalization
         motion = (motion - self.mean) / self.std
 
-        return caption, motion, m_length, word_embeddings, pos_one_hots, sent_len, "_".join(
-            tokens), all_captions
+        return {
+            "text": caption,
+            "motion": motion,
+            "motion_len": m_length,
+            "word_embs": word_embeddings,
+            "pos_ohot": pos_one_hots,
+            "text_len": sent_len,
+            "tokens": "_".join(tokens),
+            "all_captions": all_captions
+        }

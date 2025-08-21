@@ -227,4 +227,11 @@ class Text2MotionDatasetCB(data.Dataset):
 
         tasks = self.tasks[task_idx]
 
-        return caption, m_tokens, m_tokens_len, None, None, None, None, all_captions, tasks
+        return {
+            "text": caption,
+            "motion_tokens": m_tokens,
+            "motion_tokens_len": m_tokens_len,
+            "all_captions": all_captions,
+            "tasks": tasks
+            # No need to include None fields
+        }
