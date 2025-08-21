@@ -95,7 +95,8 @@ class M2TMetrics(Metric):
         self.add_state("gtmotion_embeddings", default=[])
 
         # T2M Evaluator
-        self._get_t2m_evaluator(cfg)
+        if not self.dataname in ["nymeria", "kit"]:
+            self._get_t2m_evaluator(cfg)
 
         self.nlp = spacy.load('en_core_web_sm')
 

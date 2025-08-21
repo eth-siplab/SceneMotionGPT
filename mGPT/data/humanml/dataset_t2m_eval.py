@@ -24,7 +24,6 @@ class Text2MotionDatasetEval(Text2MotionDataset):
         super().__init__(data_root, split, mean, std, max_motion_length,
                          min_motion_length, unit_length, fps, tmpFile, tiny,
                          debug, **kwargs)
-
         self.w_vectorizer = w_vectorizer
 
 

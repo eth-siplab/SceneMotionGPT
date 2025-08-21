@@ -1,4 +1,4 @@
-NAME: Pretrain_HumanML3D # Experiment names
+NAME: MotionCode_Nymeria # Experiment names
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
 NUM_NODES: 1 # Number of GPU nodes for distributed training
 DEVICE: [0] # Index of gpus eg. [0] or [0,1,2,3]
@@ -11,7 +11,7 @@ TRAIN:
   BATCH_SIZE: 1 # Size of batches
   END_EPOCH: 300 # End epoch
   RESUME: '' # Resume training from this path
-  PRETRAINED: '' # Preatrained model path
+  PRETRAINED: '/home/dominik/Documents/repos/MotionGPT/experiments/mgpt/Pretrain_Nymeria_2025-08-12-19-04-45/checkpoints/epoch=199-v1.ckpt' # Preatrained model path
   PRETRAINED_VAE: experiments/mgpt/VQVAE_NYMERIA_2025-08-08-17-32-44/checkpoints/epoch=1649-v1.ckpt # Vae model path
 
   OPTIM:

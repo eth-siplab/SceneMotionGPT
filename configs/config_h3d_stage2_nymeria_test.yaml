@@ -12,7 +12,7 @@ TRAIN:
   END_EPOCH: 300 # End epoch
   RESUME: '' # Resume training from this path'
   PRETRAINED: '' # Preatrained model path
-  PRETRAINED_VAE: experiments/mgpt/VQVAE_NYMERIA_2025-08-15-19-14-25/checkpoints/epoch=2849-v1.ckpt # Vae model path
+  PRETRAINED_VAE: experiments/mgpt/VQVAE_NYMERIA_2025-08-08-17-32-44/checkpoints/epoch=1649-v1.ckpt # Vae model path
 
   OPTIM:
     target: AdamW
@@ -27,7 +27,7 @@ EVAL:
   SPLIT: val # og code used to be test, seems odd, changed it to val
 
 TEST:
-  CHECKPOINTS: experiments/mgpt/VQVAE_NYMERIA_2025-08-15-19-14-25/checkpoints/epoch=2849-v1.ckpt
+  CHECKPOINTS: experiments/mgpt/VQVAE_NYMERIA_2025-08-08-17-32-44/checkpoints/epoch=1649-v1.ckpt
   SPLIT: test
   BATCH_SIZE: 32 # training Batch size
   REPLICATION_TIMES: 1 # Number of times to replicate the test
@@ -38,7 +38,7 @@ DATASET:
   CODE_PATH: TOKENS
 
 METRIC:
-  TYPE: ['PredMetrics']
+  TYPE: ['PredMetrics', 'M2TMetrics']
 
 LOSS:
   LAMBDA_FEATURE: 1.0
@@ -52,7 +52,7 @@ model:
   target: mGPT.models.mgpt.MotionGPT
   params:
     condition: 'text'
-    task: 't2m'
+    task: 'm2t'
     lm: ${lm.default}
     motion_vae: ${vq.default}
 

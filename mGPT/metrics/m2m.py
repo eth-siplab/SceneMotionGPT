@@ -32,13 +32,15 @@ class PredMetrics(Metric):
         self.add_state("count_seq",
                        default=torch.tensor(0),
                        dist_reduce_fx="sum")
-
+        # average pairwise distance
         self.add_state("APD",
                        default=torch.tensor([0.0]),
                        dist_reduce_fx="sum")
+        # average displacement error
         self.add_state("ADE",
                        default=torch.tensor([0.0]),
                        dist_reduce_fx="sum")
+        # final displacement error
         self.add_state("FDE",
                        default=torch.tensor([0.0]),
                        dist_reduce_fx="sum")
@@ -53,7 +55,7 @@ class PredMetrics(Metric):
         count = self.count
         count_seq = self.count_seq
         mr_metrics = {}
-        mr_metrics["APD"] = self.APD / count_seq 
+        mr_metrics["APD"] = self.APD / count_seq
         mr_metrics["ADE"] = self.ADE / count_seq
         mr_metrics["FDE"] = self.FDE / count_seq
         
