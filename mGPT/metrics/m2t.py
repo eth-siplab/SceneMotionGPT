@@ -58,7 +58,7 @@ class M2TMetrics(Metric):
         self.R_size = R_size
         self.diversity_times = diversity_times
         self.unit_length = unit_length
-        self.is_smpl = is_smpl
+        # self.is_smpl = is_smpl = False
 
         self.add_state("count", default=torch.tensor(0), dist_reduce_fx="sum")
         self.add_state("count_seq",

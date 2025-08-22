@@ -188,7 +188,7 @@ class Text2MotionDatasetEval(data.Dataset):
                         data_dict[name] = {
                             'motion': motion,
                             "length": len(motion),
-                            'motion_token_list': m_token_list,
+                            'm_token_list': m_token_list,
                             'text': text_data
                         }
                         new_name_list.append(name)

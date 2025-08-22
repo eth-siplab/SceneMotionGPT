@@ -51,6 +51,7 @@ class Text2MotionDatasetToken(data.Dataset):
             try:
                 motion = np.load(pjoin(motion_dir, name + '.npy'))
                 if (len(motion)) <  self.min_motion_length: # or (len(motion) >= 200)):
+                    print(f"Skip short motion {name} with length {len(motion)}")
                     continue
 
                 data_dict[name] = {'motion': motion,

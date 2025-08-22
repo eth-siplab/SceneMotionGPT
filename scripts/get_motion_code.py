@@ -14,6 +14,8 @@ def main():
     cfg = parse_args(phase="test")  # parse config file
     cfg.TRAIN.STAGE = "token"
     cfg.TRAIN.BATCH_SIZE = 1
+    cfg.EVAL.BATCH_SIZE = 1
+    cfg.TEST.BATCH_SIZE = 1
 
     # set seed
     pl.seed_everything(cfg.SEED_VALUE)

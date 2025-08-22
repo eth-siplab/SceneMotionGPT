@@ -475,7 +475,8 @@ class MotionGPT(BaseModel):
             elif self.hparams.task == "m2t" and self.hparams.stage in [
                     "lm_instruct", "lm_pretrain", "lm_rl"
             ]:
-                self.hparams.metrics_dict = metrics_dicts = ['M2TMetrics']
+                # self.hparams.metrics_dict = metrics_dicts = ['M2TMetrics']
+                metrics_dicts = self.hparams.metrics_dict
                 for metric in metrics_dicts:
                     if metric == "M2TMetrics":
                         getattr(self.metrics, metric).update(

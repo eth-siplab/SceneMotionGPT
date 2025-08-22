@@ -88,7 +88,7 @@ def main():
     # log the config to the logger (wandb)
     @rank_zero_only
     def update_wandb_config(cfg, pl_logger):
-        if cfg.LOGGER.WANDB.params.project:
+        if cfg.LOGGER.WANDB.params.project and hasattr(pl_logger.experiment, 'config'):
             pl_logger.experiment.config.update(OmegaConf.to_container(cfg, resolve=True))
 
     update_wandb_config(cfg, pl_logger) if pl_loggers else None        

@@ -1,7 +1,7 @@
 NAME: Pretrain_HumanML3D # Experiment names
 ACCELERATOR: 'gpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
 NUM_NODES: 1 # Number of GPU nodes for distributed training
-DEVICE: [0,1,2,3,4,5,6,7] # Index of gpus eg. [0] or [0,1,2,3]
+DEVICE: [1] # Index of gpus eg. [0] or [0,1,2,3]
 
 TRAIN:
   #---------------------------------
@@ -36,7 +36,7 @@ DATASET:
   CODE_PATH: TOKENS
 
 METRIC:
-  TYPE: ['TM2TMetrics', 'PredMetrics']
+  TYPE: ['PredMetrics']
 
 LOSS:
   LAMBDA_FEATURE: 1.0
@@ -50,7 +50,7 @@ model:
   target: mGPT.models.mgpt.MotionGPT
   params:
     condition: 'text'
-    task: 't2m'
+    task: 'm2t'
     lm: ${lm.default}
     motion_vae: ${vq.default}
 
